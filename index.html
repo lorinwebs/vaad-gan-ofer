@@ -78,6 +78,60 @@ body::before {
 }
 .lede { color: var(--muted); font-size: 0.95rem; }
 
+.unpaid-board {
+  margin: 0 0 1.75rem;
+  padding: 1.35rem 1.4rem 1.5rem;
+  background: linear-gradient(145deg, #FFF6E8, #FFE8CC);
+  border: 1px solid rgba(184, 106, 20, 0.28);
+  border-radius: 14px;
+  animation: rise 0.55s ease both 0.05s;
+}
+.unpaid-board.is-clear {
+  background: linear-gradient(145deg, #E7F5EE, #D7EFE9);
+  border-color: rgba(15, 107, 92, 0.25);
+}
+.unpaid-board-title {
+  font-family: var(--display);
+  font-size: clamp(1.35rem, 4vw, 1.85rem);
+  font-weight: 800;
+  color: var(--warn);
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+.unpaid-board.is-clear .unpaid-board-title { color: var(--vaad); }
+.unpaid-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+}
+.unpaid-col-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-bottom: 0.55rem;
+}
+.unpaid-col.vaad .unpaid-col-label { color: var(--warn); }
+.unpaid-col.fruits .unpaid-col-label { color: var(--fruits); }
+.unpaid-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.unpaid-name {
+  font-family: var(--display);
+  font-size: clamp(1rem, 2.8vw, 1.2rem);
+  font-weight: 700;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(20,34,28,0.12);
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
+  color: var(--ink);
+}
+.unpaid-empty {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .budgets {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -350,7 +404,7 @@ footer {
 }
 
 @media (max-width: 720px) {
-  .budgets, .events-bar { grid-template-columns: 1fr; }
+  .budgets, .events-bar, .unpaid-cols { grid-template-columns: 1fr; }
   .event-row { grid-template-columns: 1fr auto; }
   .event-notes-inp { grid-column: 1 / -1; }
   .child-row { grid-template-columns: 1fr 1fr; }
@@ -413,6 +467,8 @@ footer {
     <h1>תקציב ועד הורים</h1>
     <p class="lede">שנת 2026–2027 · נשמר בענן · משותף לכל הוועד</p>
   </header>
+
+  <section class="unpaid-board" id="unpaid-board" aria-live="polite"></section>
 
   <!-- Two budget panels side by side -->
   <div class="budgets">
@@ -501,7 +557,6 @@ footer {
     <span class="section-label">ילדים — ממתינים לתשלום למעלה</span>
   </div>
   <div class="list" id="list"></div>
-  <div class="alerts" id="alerts"></div>
 
   <footer>לחץ על תג תשלום לעדכון · נשמר בענן · משותף לכל הוועד</footer>
 </div>
@@ -787,22 +842,26 @@ function render() {
     });
   };
 
-  // Alerts
-  var alerts = document.getElementById('alerts');
-  alerts.innerHTML = '';
-  if (vUnpaid.length > 0) {
-    var vBox = document.createElement('div');
-    vBox.className = 'alert-box vaad-alert';
-    vBox.innerHTML = '<span class="alert-title">ועד — טרם שילמו</span><div class="chips">' +
-      vUnpaid.map(function(c){ return '<span class="chip">'+c.name+'</span>'; }).join('') + '</div>';
-    alerts.appendChild(vBox);
-  }
-  if (fUnpaid.length > 0) {
-    var fBox = document.createElement('div');
-    fBox.className = 'alert-box fruits-alert';
-    fBox.innerHTML = '<span class="alert-title">פירות — טרם שילמו</span><div class="chips">' +
-      fUnpaid.map(function(c){ return '<span class="chip">'+c.name+'</span>'; }).join('') + '</div>';
-    alerts.appendChild(fBox);
+  // Big unpaid board at top
+  var board = document.getElementById('unpaid-board');
+  var totalUnpaid = vUnpaid.length + fUnpaid.length;
+  if (totalUnpaid === 0) {
+    board.className = 'unpaid-board is-clear';
+    board.innerHTML = '<div class="unpaid-board-title">כולם שילמו</div><p class="unpaid-empty">אין חובות פתוחים כרגע</p>';
+  } else {
+    board.className = 'unpaid-board';
+    function namesHtml(arr) {
+      if (!arr.length) return '<div class="unpaid-empty">הכול שולם</div>';
+      return '<div class="unpaid-names">' + arr.map(function(c){
+        return '<span class="unpaid-name">' + c.name + '</span>';
+      }).join('') + '</div>';
+    }
+    board.innerHTML =
+      '<div class="unpaid-board-title">מי עוד לא שילם</div>' +
+      '<div class="unpaid-cols">' +
+        '<div class="unpaid-col vaad"><div class="unpaid-col-label">ועד · ' + vUnpaid.length + '</div>' + namesHtml(vUnpaid) + '</div>' +
+        '<div class="unpaid-col fruits"><div class="unpaid-col-label">פירות · ' + fUnpaid.length + '</div>' + namesHtml(fUnpaid) + '</div>' +
+      '</div>';
   }
 }
 
