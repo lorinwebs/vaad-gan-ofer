@@ -1,0 +1,2 @@
+# Public Supabase anon JWT (browser key; RLS protects data)
+config.js:jwt:4

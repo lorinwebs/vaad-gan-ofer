@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ועד גן עופר</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Rubik:wght@500;600;700;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+
+<style>
+:root {
+  --bg0: #E7F0EC;
+  --bg1: #F3F7F5;
+  --ink: #14221C;
+  --muted: #5A6B63;
+  --line: rgba(20, 34, 28, 0.12);
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-solid: #FFFFFF;
+  --vaad: #0F6B5C;
+  --vaad-soft: #D7EFE9;
+  --fruits: #2F6B3A;
+  --fruits-soft: #E2F0E4;
+  --warn: #B86A14;
+  --warn-soft: #FFF1DD;
+  --danger: #B42318;
+  --danger-soft: #FCEBEA;
+  --ok: #1B7A4A;
+  --wa: #1FAF5B;
+  --radius: 12px;
+  --font: 'Assistant', 'Heebo', sans-serif;
+  --display: 'Rubik', 'Assistant', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  direction: rtl;
+  color: var(--ink);
+  min-height: 100vh;
+  line-height: 1.65;
+  background:
+    radial-gradient(900px 420px at 100% -10%, rgba(15, 107, 92, 0.16), transparent 55%),
+    radial-gradient(700px 380px at -5% 20%, rgba(47, 107, 58, 0.12), transparent 50%),
+    linear-gradient(165deg, var(--bg0), var(--bg1) 45%, #EEF3F8);
+  padding: 0 1rem 4rem;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: 0.35;
+  background-image: radial-gradient(rgba(20,34,28,0.06) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+.container { max-width: 980px; margin: 0 auto; position: relative; z-index: 1; }
+
+.hero {
+  padding: 2.4rem 0 1.6rem;
+  animation: rise 0.55s ease both;
+}
+.brand {
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 7vw, 3.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--vaad);
+  margin-bottom: 0.35rem;
+}
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(1.15rem, 3vw, 1.45rem);
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+.lede { color: var(--muted); font-size: 0.95rem; }
+
+.budgets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  animation: rise 0.65s ease both 0.08s;
+}
+.bpanel {
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.bpanel.vaad { box-shadow: inset 4px 0 0 var(--vaad); }
+.bpanel.fruits { box-shadow: inset 4px 0 0 var(--fruits); }
+.bpanel-head {
+  padding: 1.1rem 1.2rem 0.4rem;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem;
+}
+.bpanel-title {
+  font-family: var(--display);
+  font-size: 1.05rem; font-weight: 700;
+}
+.vaad .bpanel-title { color: var(--vaad); }
+.fruits .bpanel-title { color: var(--fruits); }
+.bpanel-fee { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+
+.bsummary {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  padding: 0.4rem 1.2rem 0.9rem; gap: 0.5rem;
+}
+.bsum-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); margin-bottom: 0.15rem; }
+.bsum-val {
+  font-family: var(--display);
+  font-size: 1.35rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.bsum-val.balance-pos { color: var(--ok); }
+.bsum-val.balance-neg { color: var(--danger); }
+.bsum-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+
+.bpanel-prog { padding: 0 1.2rem 1rem; }
+.prog-meta { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.35rem; }
+.prog-pct { font-weight: 700; }
+.vaad .prog-pct { color: var(--vaad); }
+.fruits .prog-pct { color: var(--fruits); }
+.prog-track { height: 8px; background: rgba(20,34,28,0.08); border-radius: 4px; overflow: hidden; }
+.prog-bar { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.2,.8,.2,1); }
+.vaad .prog-bar { background: linear-gradient(90deg, #0F6B5C, #2AA88F); }
+.fruits .prog-bar { background: linear-gradient(90deg, #2F6B3A, #5CA86A); }
+
+.bpanel-exps { border-top: 1px solid var(--line); padding: 0.85rem 1.2rem 1rem; }
+.bexp-title {
+  font-size: 0.78rem; font-weight: 700; color: var(--muted);
+  margin-bottom: 0.55rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.bexp-add {
+  font-family: inherit; font-size: 0.78rem; font-weight: 700;
+  color: #fff; border: none; border-radius: 8px; padding: 0.35rem 0.7rem;
+  cursor: pointer; transition: transform 0.15s ease, opacity 0.15s;
+}
+.vaad .bexp-add { background: var(--vaad); }
+.fruits .bexp-add { background: var(--fruits); }
+.bexp-add:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.bexp-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.bexp-row {
+  display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
+  font-size: 0.84rem; padding: 0.55rem 0.6rem;
+  border-radius: 8px; background: rgba(255,255,255,0.7);
+  border: 1px solid var(--line);
+}
+.bexp-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.bexp-name { flex: 1; min-width: 7rem; font-weight: 600; }
+.bexp-det { font-size: 0.72rem; color: var(--muted); }
+.bexp-amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bexp-del {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  font-size: 0.85rem; padding: 0.15rem 0.35rem; border-radius: 6px;
+}
+.bexp-del:hover { color: var(--danger); background: var(--danger-soft); }
+.bexp-empty { font-size: 0.82rem; color: var(--muted); }
+.bexp-status {
+  font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.55rem;
+  border-radius: 6px; cursor: pointer; border: 1px solid transparent; font-family: inherit;
+  white-space: nowrap; flex-shrink: 0;
+}
+.bexp-status.is-paid { background: var(--vaad-soft); color: var(--vaad); border-color: rgba(15,107,92,0.25); }
+.bexp-status.is-pending { background: var(--warn-soft); color: var(--warn); border-color: rgba(184,106,20,0.25); }
+
+.section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 1.8rem 0 0.75rem;
+  animation: rise 0.5s ease both;
+}
+.section-label {
+  font-family: var(--display);
+  font-size: 1rem; font-weight: 700; color: var(--ink);
+}
+
+.events-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem; margin-bottom: 0.85rem;
+}
+.ebar-cell {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem 0.95rem;
+}
+.ebar-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); margin-bottom: 0.2rem; }
+.ebar-val { font-family: var(--display); font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ebar-val.ok { color: var(--ok); }
+.ebar-val.warn { color: var(--warn); }
+.ebar-val.over { color: var(--danger); }
+
+.events-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+.event-row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.95rem;
+  display: grid; grid-template-columns: 1fr 7.2rem 1fr auto;
+  gap: 0.65rem; align-items: center;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.event-row:hover { border-color: rgba(15,107,92,0.35); transform: translateY(-1px); }
+.event-name { font-size: 0.95rem; font-weight: 700; }
+.event-emoji { font-size: 1rem; margin-inline-end: 0.35rem; }
+.event-amount-wrap { display: flex; align-items: center; gap: 0.25rem; }
+.event-amount-inp, .event-notes-inp, .form-input {
+  font-family: inherit; font-size: 0.9rem; font-weight: 500;
+  background: var(--surface-solid); border: 1px solid var(--line);
+  border-radius: 8px; padding: 0.45rem 0.65rem; color: var(--ink);
+  outline: none; width: 100%; transition: border-color 0.15s;
+}
+.event-amount-inp { direction: ltr; text-align: end; width: 5.4rem; font-weight: 700; }
+.event-amount-inp:focus, .event-notes-inp:focus, .form-input:focus { border-color: var(--vaad); }
+.event-shekel { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.event-status {
+  font-size: 0.72rem; font-weight: 700; padding: 0.35rem 0.65rem;
+  border-radius: 8px; cursor: pointer; border: 1px solid var(--line);
+  font-family: inherit; white-space: nowrap; background: #fff;
+}
+.est-planned { color: var(--muted); }
+.est-progress { background: var(--warn-soft); color: var(--warn); border-color: rgba(184,106,20,0.3); }
+.est-done { background: var(--vaad-soft); color: var(--vaad); border-color: rgba(15,107,92,0.3); }
+
+.list { display: flex; flex-direction: column; gap: 0.45rem; }
+.child-row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  display: grid; grid-template-columns: 9rem 9.5rem 1fr;
+  gap: 0.75rem; align-items: center;
+  transition: border-color 0.15s, transform 0.15s;
+  animation: rise 0.4s ease both;
+}
+.child-row:hover { border-color: rgba(15,107,92,0.3); transform: translateY(-1px); }
+.child-num { font-size: 0.7rem; color: var(--muted); font-weight: 600; }
+.child-name { font-size: 0.95rem; font-weight: 700; line-height: 1.25; }
+.child-budgets { display: flex; flex-direction: column; gap: 0.35rem; align-items: stretch; }
+.status-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700;
+  padding: 0.35rem 0.55rem; border-radius: 8px; cursor: pointer;
+  border: 1px solid transparent; font-family: inherit; white-space: nowrap;
+  transition: transform 0.12s ease, opacity 0.12s;
+}
+.status-badge:hover { transform: translateY(-1px); }
+.status-badge.paid-vaad { background: var(--vaad); color: #fff; }
+.status-badge.unpaid-vaad { background: var(--warn-soft); color: var(--warn); border-color: rgba(184,106,20,0.35); }
+.status-badge.paid-fruits { background: var(--fruits); color: #fff; }
+.status-badge.unpaid-fruits { background: var(--fruits-soft); color: var(--fruits); border-color: rgba(47,107,58,0.35); }
+.child-parents { display: flex; flex-direction: column; gap: 0.35rem; }
+.parent-entry { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.parent-name { font-size: 0.82rem; font-weight: 600; min-width: 2.6rem; }
+.parent-phone {
+  font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums;
+  direction: ltr; unicode-bidi: isolate;
+}
+.wa-btn {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  background: var(--wa); color: #fff;
+  font-size: 0.68rem; font-weight: 700;
+  padding: 0.22rem 0.5rem; border-radius: 7px;
+  text-decoration: none; transition: transform 0.12s, opacity 0.12s;
+}
+.wa-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.alerts { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 1rem; }
+.alert-box {
+  border-radius: var(--radius); padding: 0.85rem 1rem;
+  display: flex; align-items: flex-start; gap: 0.65rem; flex-wrap: wrap;
+  border: 1px solid var(--line);
+}
+.alert-box.vaad-alert { background: var(--warn-soft); }
+.alert-box.fruits-alert { background: var(--fruits-soft); }
+.alert-title { font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+.vaad-alert .alert-title { color: var(--warn); }
+.fruits-alert .alert-title { color: var(--fruits); }
+.chips { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.chip {
+  background: rgba(255,255,255,0.8); border-radius: 7px;
+  padding: 0.2rem 0.55rem; font-size: 0.78rem; font-weight: 500;
+  border: 1px solid var(--line);
+}
+
+.overlay {
+  display: none; position: fixed; inset: 0; background: rgba(12, 24, 20, 0.45);
+  z-index: 100; align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.overlay.open { display: flex; animation: fade 0.2s ease; }
+.exp-modal {
+  background: #fff; border-radius: 14px; padding: 1.35rem 1.4rem;
+  width: min(520px, 92vw); border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 0.85rem;
+  animation: rise 0.25s ease;
+}
+.modal-title { font-family: var(--display); font-size: 1.05rem; font-weight: 700; }
+.modal-budget-tag {
+  display: inline-block; font-size: 0.72rem; font-weight: 700;
+  padding: 0.22rem 0.6rem; border-radius: 7px; color: #fff;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
+.form-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.form-field.full { grid-column: 1 / -1; }
+.form-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+.form-input[type="number"] { direction: ltr; text-align: end; }
+.form-input[type="date"] { direction: ltr; }
+.modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+.btn-primary {
+  font-family: inherit; font-size: 0.88rem; font-weight: 700;
+  padding: 0.55rem 1.15rem; border-radius: 9px; border: none; cursor: pointer; color: #fff;
+}
+.btn-cancel {
+  font-family: inherit; font-size: 0.88rem; font-weight: 600;
+  padding: 0.55rem 1rem; border-radius: 9px; border: 1px solid var(--line);
+  background: #fff; color: var(--muted); cursor: pointer;
+}
+
+.cat-gifts { background: #C9852A; }
+.cat-equip { background: #2F6FA8; }
+.cat-food { background: #2F8B5A; }
+.cat-events { background: #0F6B5C; }
+.cat-other { background: #7A8790; }
+
+footer {
+  margin-top: 2.4rem; text-align: center;
+  font-size: 0.78rem; color: var(--muted);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 720px) {
+  .budgets, .events-bar { grid-template-columns: 1fr; }
+  .event-row { grid-template-columns: 1fr auto; }
+  .event-notes-inp { grid-column: 1 / -1; }
+  .child-row { grid-template-columns: 1fr 1fr; }
+  .child-parents { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 0.55rem; }
+}
+@media (max-width: 420px) {
+  .child-row { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<!-- Add expense overlay -->
+<div class="overlay" id="overlay" onclick="closeModalOutside(event)">
+  <div class="exp-modal">
+    <div style="display:flex;align-items:center;gap:0.6rem">
+      <div class="modal-title">הוסף הוצאה</div>
+      <span class="modal-budget-tag" id="modal-tag">—</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-field full">
+        <label class="form-label">תיאור</label>
+        <input class="form-input" type="text" id="inp-desc" placeholder="לדוגמה: מארזי ראש השנה">
+      </div>
+      <div class="form-field full">
+        <label class="form-label">פרטים (אופציונלי)</label>
+        <input class="form-input" type="text" id="inp-details" placeholder="לדוגמה: 7 בנות צוות">
+      </div>
+      <div class="form-field">
+        <label class="form-label">תאריך</label>
+        <input class="form-input" type="date" id="inp-date">
+      </div>
+      <div class="form-field">
+        <label class="form-label">סכום (₪)</label>
+        <input class="form-input" type="number" id="inp-amount" placeholder="0" min="0">
+      </div>
+      <div class="form-field">
+        <label class="form-label">קטגוריה</label>
+        <select class="form-input" id="inp-cat">
+          <option value="gifts">מתנות</option>
+          <option value="equip">ציוד</option>
+          <option value="food">אוכל ושתייה</option>
+          <option value="events">אירועים</option>
+          <option value="other">אחר</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">ביטול</button>
+      <button class="btn-primary" id="modal-submit" onclick="addExpense()">הוסף הוצאה</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <header class="hero">
+    <p class="brand">גן עופר</p>
+    <h1>תקציב ועד הורים</h1>
+    <p class="lede">שנת 2026–2027 · נשמר בענן · משותף לכל הוועד</p>
+  </header>
+
+  <!-- Two budget panels side by side -->
+  <div class="budgets">
+    <!-- VAAD panel -->
+    <div class="bpanel vaad">
+      <div class="bpanel-head">
+        <span class="bpanel-title">ועד</span>
+        <span class="bpanel-fee">350 ₪ לילד · יעד 7,000 ₪</span>
+      </div>
+      <div class="bsummary">
+        <div class="bsum-col">
+          <div class="bsum-label">נגבה</div>
+          <div class="bsum-val" id="v-income">—</div>
+          <div class="bsum-sub" id="v-income-sub">—</div>
+        </div>
+        <div class="bsum-col">
+          <div class="bsum-label">הוצאות</div>
+          <div class="bsum-val" id="v-expamt">—</div>
+          <div class="bsum-sub" id="v-exp-sub">—</div>
+        </div>
+        <div class="bsum-col">
+          <div class="bsum-label">יתרה</div>
+          <div class="bsum-val" id="v-balance">—</div>
+          <div class="bsum-sub">בקופה</div>
+        </div>
+      </div>
+      <div class="bpanel-prog">
+        <div class="prog-meta"><span>גבייה</span><span class="prog-pct" id="v-pct">—</span></div>
+        <div class="prog-track"><div class="prog-bar" id="v-bar" style="width:0%"></div></div>
+      </div>
+      <div class="bpanel-exps">
+        <div class="bexp-title">
+          <span>הוצאות ועד</span>
+          <button class="bexp-add" onclick="openModal('vaad')">+ הוסף</button>
+        </div>
+        <div class="bexp-list" id="v-exp-list"></div>
+      </div>
+    </div>
+
+    <!-- FRUITS panel -->
+    <div class="bpanel fruits">
+      <div class="bpanel-head">
+        <span class="bpanel-title">פירות</span>
+        <span class="bpanel-fee">340 ₪ לילד · יעד 6,800 ₪</span>
+      </div>
+      <div class="bsummary">
+        <div class="bsum-col">
+          <div class="bsum-label">נגבה</div>
+          <div class="bsum-val" id="f-income">—</div>
+          <div class="bsum-sub" id="f-income-sub">—</div>
+        </div>
+        <div class="bsum-col">
+          <div class="bsum-label">הוצאות</div>
+          <div class="bsum-val" id="f-expamt">—</div>
+          <div class="bsum-sub" id="f-exp-sub">—</div>
+        </div>
+        <div class="bsum-col">
+          <div class="bsum-label">יתרה</div>
+          <div class="bsum-val" id="f-balance">—</div>
+          <div class="bsum-sub">בקופה</div>
+        </div>
+      </div>
+      <div class="bpanel-prog">
+        <div class="prog-meta"><span>גבייה</span><span class="prog-pct" id="f-pct">—</span></div>
+        <div class="prog-track"><div class="prog-bar" id="f-bar" style="width:0%"></div></div>
+      </div>
+      <div class="bpanel-exps">
+        <div class="bexp-title">
+          <span>הוצאות פירות</span>
+          <button class="bexp-add" onclick="openModal('fruits')">+ הוסף</button>
+        </div>
+        <div class="bexp-list" id="f-exp-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events planning -->
+  <div class="section-head" style="margin-top:0.25rem">
+    <span class="section-label">תכנון אירועים</span>
+  </div>
+  <div class="events-bar" id="events-bar"></div>
+  <div class="events-grid" id="events-grid"></div>
+
+  <!-- Children -->
+  <div class="section-head">
+    <span class="section-label">ילדים והורים</span>
+  </div>
+  <div class="list" id="list"></div>
+  <div class="alerts" id="alerts"></div>
+
+  <footer>לחץ על תג תשלום לעדכון · נשמר בענן · משותף לכל הוועד</footer>
+</div>
+</body>
+</html>
+
+<script>
+var SUPABASE_URL = window.GAN_OFER_CONFIG.supabaseUrl;
+var SUPABASE_KEY = window.GAN_OFER_CONFIG.supabaseKey;
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+var VAAD_FEE = 350, FRUITS_FEE = 340;
+var children = [];
+var expenses = [];
+var currentModalBudget = 'vaad';
+var saving = false;
+var skipRealtime = false;
+
+var CAT_COLORS = { gifts:'cat-gifts', equip:'cat-equip', food:'cat-food', events:'cat-events', other:'cat-other' };
+var CAT_LABELS = { gifts:'מתנות', equip:'ציוד', food:'אוכל', events:'אירועים', other:'אחר' };
+
+async function loadAll() {
+  var results = await Promise.all([
+    sb.from('gan_ofer_children').select('*').order('sort_order'),
+    sb.from('gan_ofer_expenses').select('*').order('expense_date', { ascending: false }),
+    sb.from('gan_ofer_events').select('*').order('sort_order')
+  ]);
+  var cRes = results[0], eRes = results[1], evRes = results[2];
+  if (cRes.error || eRes.error || evRes.error) {
+    console.error(cRes.error || eRes.error || evRes.error);
+    alert('שגיאה בטעינת הנתונים');
+    return;
+  }
+  children = (cRes.data || []).map(function(row) {
+    return { id: row.id, name: row.name, vaad: row.vaad, fruits: row.fruits, p: row.parents || [] };
+  });
+  expenses = (eRes.data || []).map(function(row) {
+    return {
+      id: Number(row.id),
+      date: row.expense_date || '',
+      desc: row.description,
+      details: row.details || '',
+      cat: row.cat,
+      budget: row.budget,
+      amount: Number(row.amount),
+      paid: !!row.paid
+    };
+  });
+  events = (evRes.data || []).map(function(row) {
+    return {
+      id: row.id,
+      emoji: row.emoji || '',
+      name: row.name,
+      amount: Number(row.amount) || 0,
+      notes: row.notes || '',
+      status: row.status || 'planned'
+    };
+  });
+  render();
+  renderEvents();
+}
+
+async function withSave(fn) {
+  if (saving) return;
+  saving = true;
+  skipRealtime = true;
+  try { await fn(); }
+  catch (err) { console.error(err); alert('שגיאה בשמירה'); }
+  finally {
+    saving = false;
+    setTimeout(function(){ skipRealtime = false; }, 400);
+  }
+}
+
+function fmt(n) { return n.toLocaleString('he-IL') + ' ₪'; }
+function fmtPhone(ph) {
+  var d = ph.replace(/\D/g,'');
+  return d.length === 10 ? d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6) : d;
+}
+function waUrl(ph) { return 'https://wa.me/972' + ph.replace(/\D/g,'').slice(1); }
+function fmtDate(s) {
+  if (!s) return '';
+  var p = s.split('-');
+  return p.length === 3 ? p[2]+'.'+p[1] : s;
+}
+
+var WA_SVG = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+
+function openModal(budget) {
+  currentModalBudget = budget;
+  var overlay = document.getElementById('overlay');
+  var tag = document.getElementById('modal-tag');
+  var submit = document.getElementById('modal-submit');
+  var color = budget === 'vaad' ? 'var(--primary)' : 'var(--fruits)';
+  tag.textContent = budget === 'vaad' ? 'ועד' : 'פירות';
+  tag.style.background = color;
+  submit.style.background = color;
+  var today = new Date();
+  var y = today.getFullYear();
+  var m = String(today.getMonth()+1).padStart(2,'0');
+  var d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('inp-date').value = y+'-'+m+'-'+d;
+  document.getElementById('inp-desc').value = '';
+  document.getElementById('inp-details').value = '';
+  document.getElementById('inp-amount').value = '';
+  document.getElementById('inp-cat').value = 'gifts';
+  overlay.classList.add('open');
+  setTimeout(function(){ document.getElementById('inp-desc').focus(); }, 50);
+}
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+
+function addExpense() {
+  var desc   = document.getElementById('inp-desc').value.trim();
+  var amount = parseFloat(document.getElementById('inp-amount').value);
+  if (!desc || !amount || amount <= 0) { alert('יש למלא תיאור וסכום'); return; }
+  var row = {
+    id: Date.now(),
+    expense_date: document.getElementById('inp-date').value,
+    description: desc,
+    details: document.getElementById('inp-details').value.trim(),
+    cat: document.getElementById('inp-cat').value,
+    budget: currentModalBudget,
+    amount: amount,
+    paid: false
+  };
+  withSave(async function() {
+    var res = await sb.from('gan_ofer_expenses').insert(row);
+    if (res.error) throw res.error;
+    expenses.push({
+      id: row.id, date: row.expense_date, desc: row.description, details: row.details,
+      cat: row.cat, budget: row.budget, amount: row.amount, paid: false
+    });
+    closeModal();
+    render();
+  });
+}
+
+function deleteExpense(id) {
+  if (!confirm('למחוק את ההוצאה?')) return;
+  withSave(async function() {
+    var res = await sb.from('gan_ofer_expenses').delete().eq('id', id);
+    if (res.error) throw res.error;
+    expenses = expenses.filter(function(e){ return e.id !== id; });
+    render();
+  });
+}
+
+function toggleExpPaid(id) {
+  var exp = expenses.find(function(e){ return e.id === id; });
+  if (!exp) return;
+  var next = !exp.paid;
+  withSave(async function() {
+    var res = await sb.from('gan_ofer_expenses').update({ paid: next }).eq('id', id);
+    if (res.error) throw res.error;
+    exp.paid = next;
+    render();
+  });
+}
+
+function renderExpList(elId, budget) {
+  var el = document.getElementById(elId);
+  var list = expenses.filter(function(e){ return e.budget === budget; })
+                     .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+  if (list.length === 0) {
+    el.innerHTML = '<div class="bexp-empty">אין הוצאות עדיין</div>';
+    return 0;
+  }
+  el.innerHTML = '';
+  var total = 0;
+  list.forEach(function(exp) {
+    total += exp.amount;
+    var row = document.createElement('div');
+    row.className = 'bexp-row';
+    var isPaid = exp.paid === true;
+    row.innerHTML =
+      '<div class="bexp-dot ' + (CAT_COLORS[exp.cat]||'cat-other') + '"></div>' +
+      '<div class="bexp-name">' + exp.desc + (exp.details ? '<span class="bexp-det"> · ' + exp.details + '</span>' : '') + '</div>' +
+      (exp.date ? '<div class="bexp-det">' + fmtDate(exp.date) + '</div>' : '') +
+      '<button class="bexp-status ' + (isPaid ? 'is-paid' : 'is-pending') + '" data-toggle="' + exp.id + '">' + (isPaid ? 'שולם' : 'טרם שולם') + '</button>' +
+      '<div class="bexp-amt">' + fmt(exp.amount) + '</div>' +
+      '<button class="bexp-del" data-id="' + exp.id + '" title="מחק">✕</button>';
+    el.appendChild(row);
+  });
+  el.onclick = function(e) {
+    var del = e.target.closest('.bexp-del');
+    if (del) { deleteExpense(parseInt(del.dataset.id)); return; }
+    var tog = e.target.closest('.bexp-status');
+    if (tog) { toggleExpPaid(parseInt(tog.dataset.toggle)); return; }
+  };
+  return total;
+}
+
+function render() {
+  var vPaid   = children.filter(function(c){ return c.vaad; });
+  var vUnpaid = children.filter(function(c){ return !c.vaad; });
+  var fPaid   = children.filter(function(c){ return c.fruits; });
+  var fUnpaid = children.filter(function(c){ return !c.fruits; });
+
+  var vIncome = vPaid.length * VAAD_FEE;
+  var fIncome = fPaid.length * FRUITS_FEE;
+  var vPct    = Math.round(vPaid.length / children.length * 100);
+  var fPct    = Math.round(fPaid.length / children.length * 100);
+
+  // Vaad expenses
+  var vExpTotal = renderExpList('v-exp-list', 'vaad');
+  var fExpTotal = renderExpList('f-exp-list', 'fruits');
+
+  var vBalance = vIncome - vExpTotal;
+  var fBalance = fIncome - fExpTotal;
+
+  // Vaad panel
+  document.getElementById('v-income').textContent     = fmt(vIncome);
+  document.getElementById('v-income-sub').textContent = vPaid.length + ' מתוך 20 ילדים';
+  document.getElementById('v-expamt').textContent     = fmt(vExpTotal);
+  document.getElementById('v-exp-sub').textContent    = expenses.filter(function(e){ return e.budget==='vaad'; }).length + ' רשומות';
+  var vBalEl = document.getElementById('v-balance');
+  vBalEl.textContent = fmt(vBalance);
+  vBalEl.className = 'bsum-val ' + (vBalance >= 0 ? 'balance-pos' : 'balance-neg');
+  document.getElementById('v-pct').textContent        = vPct + '%';
+  document.getElementById('v-bar').style.width        = vPct + '%';
+
+  // Fruits panel
+  document.getElementById('f-income').textContent     = fmt(fIncome);
+  document.getElementById('f-income-sub').textContent = fPaid.length + ' מתוך 20 ילדים';
+  document.getElementById('f-expamt').textContent     = fmt(fExpTotal);
+  document.getElementById('f-exp-sub').textContent    = expenses.filter(function(e){ return e.budget==='fruits'; }).length + ' רשומות';
+  var fBalEl = document.getElementById('f-balance');
+  fBalEl.textContent = fmt(fBalance);
+  fBalEl.className = 'bsum-val ' + (fBalance >= 0 ? 'balance-pos' : 'balance-neg');
+  document.getElementById('f-pct').textContent        = fPct + '%';
+  document.getElementById('f-bar').style.width        = fPct + '%';
+
+  // Children list
+  var list = document.getElementById('list');
+  list.innerHTML = '';
+  children.forEach(function(child, idx) {
+    var row = document.createElement('div');
+    row.className = 'child-row';
+    var parentsHtml = child.p.map(function(par) {
+      return '<div class="parent-entry">' +
+        '<span class="parent-name">' + par.n + '</span>' +
+        '<span class="parent-phone">' + fmtPhone(par.ph) + '</span>' +
+        '<a class="wa-btn" href="' + waUrl(par.ph) + '" target="_blank" rel="noopener">' + WA_SVG + ' וואצאפ</a>' +
+      '</div>';
+    }).join('');
+    row.innerHTML =
+      '<div class="child-info"><div class="child-num">' + (idx+1) + '</div><div class="child-name">' + child.name + '</div></div>' +
+      '<div class="child-budgets">' +
+        '<button class="status-badge ' + (child.vaad ? 'paid-vaad' : 'unpaid-vaad') + '" data-id="' + child.id + '" data-type="vaad">' + (child.vaad ? 'שולם ועד' : 'ממתין ועד') + '</button>' +
+        '<button class="status-badge ' + (child.fruits ? 'paid-fruits' : 'unpaid-fruits') + '" data-id="' + child.id + '" data-type="fruits">' + (child.fruits ? 'שולם פירות' : 'ממתין פירות') + '</button>' +
+      '</div>' +
+      '<div class="child-parents">' + parentsHtml + '</div>';
+    list.appendChild(row);
+  });
+  list.onclick = function(e) {
+    var btn = e.target.closest('.status-badge');
+    if (!btn) return;
+    var id = parseInt(btn.dataset.id);
+    var type = btn.dataset.type;
+    var c = children.find(function(x){ return x.id === id; });
+    if (!c) return;
+    var next = !c[type];
+    var patch = {};
+    patch[type] = next;
+    patch.updated_at = new Date().toISOString();
+    withSave(async function() {
+      var res = await sb.from('gan_ofer_children').update(patch).eq('id', id);
+      if (res.error) throw res.error;
+      c[type] = next;
+      render();
+    });
+  };
+
+  // Alerts
+  var alerts = document.getElementById('alerts');
+  alerts.innerHTML = '';
+  if (vUnpaid.length > 0) {
+    var vBox = document.createElement('div');
+    vBox.className = 'alert-box vaad-alert';
+    vBox.innerHTML = '<span class="alert-title">ועד — טרם שילמו</span><div class="chips">' +
+      vUnpaid.map(function(c){ return '<span class="chip">'+c.name+'</span>'; }).join('') + '</div>';
+    alerts.appendChild(vBox);
+  }
+  if (fUnpaid.length > 0) {
+    var fBox = document.createElement('div');
+    fBox.className = 'alert-box fruits-alert';
+    fBox.innerHTML = '<span class="alert-title">פירות — טרם שילמו</span><div class="chips">' +
+      fUnpaid.map(function(c){ return '<span class="chip">'+c.name+'</span>'; }).join('') + '</div>';
+    alerts.appendChild(fBox);
+  }
+}
+
+// ── Events planning ──
+var VAAD_TOTAL = 7000;
+var events = [];
+
+var STATUS_CYCLE = { planned:'progress', progress:'done', done:'planned' };
+var STATUS_LABEL = { planned:'מתוכנן', progress:'בתהליך', done:'הושלם' };
+var STATUS_CLASS = { planned:'est-planned', progress:'est-progress', done:'est-done' };
+
+function persistEvent(ev) {
+  return withSave(async function() {
+    var res = await sb.from('gan_ofer_events').update({
+      amount: Number(ev.amount) || 0,
+      notes: ev.notes || '',
+      status: ev.status || 'planned',
+      updated_at: new Date().toISOString()
+    }).eq('id', ev.id);
+    if (res.error) throw res.error;
+  });
+}
+
+function renderEvents() {
+  // Compute committed vaad expenses
+  var committed = expenses.filter(function(e){ return e.budget==='vaad'; })
+                          .reduce(function(s,e){ return s+e.amount; }, 0);
+  var available = VAAD_TOTAL - committed;
+  var allocated = events.reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+  var free = available - allocated;
+
+  // Summary bar
+  var bar = document.getElementById('events-bar');
+  bar.innerHTML =
+    '<div class="ebar-cell"><div class="ebar-label">תקציב ועד</div><div class="ebar-val">' + fmt(VAAD_TOTAL) + '</div></div>' +
+    '<div class="ebar-cell"><div class="ebar-label">הוצאות מאושרות</div><div class="ebar-val">' + fmt(committed) + '</div></div>' +
+    '<div class="ebar-cell"><div class="ebar-label">מוקצה לאירועים</div><div class="ebar-val ' + (allocated > available ? 'over' : '') + '">' + fmt(allocated) + '</div></div>' +
+    '<div class="ebar-cell"><div class="ebar-label">פנוי לחלוקה</div><div class="ebar-val ' + (free < 0 ? 'over' : free < 500 ? 'warn' : 'ok') + '">' + fmt(free) + '</div></div>';
+
+  // Events grid
+  var grid = document.getElementById('events-grid');
+  grid.innerHTML = '';
+  events.forEach(function(ev) {
+    var row = document.createElement('div');
+    row.className = 'event-row';
+    row.innerHTML =
+      '<div class="event-name"><span class="event-emoji">' + ev.emoji + '</span>' + ev.name + '</div>' +
+      '<div class="event-amount-wrap">' +
+        '<input class="event-amount-inp" type="number" min="0" value="' + (ev.amount||'') + '" placeholder="0" data-evid="' + ev.id + '" data-field="amount">' +
+        '<span class="event-shekel">₪</span>' +
+      '</div>' +
+      '<input class="event-notes-inp" type="text" value="' + (ev.notes||'') + '" placeholder="הערות..." data-evid="' + ev.id + '" data-field="notes">' +
+      '<button class="event-status ' + STATUS_CLASS[ev.status] + '" data-evid="' + ev.id + '">' + STATUS_LABEL[ev.status] + '</button>';
+    grid.appendChild(row);
+  });
+
+  grid.addEventListener('change', function(e) {
+    var inp = e.target;
+    var id = parseInt(inp.dataset.evid);
+    var field = inp.dataset.field;
+    if (!id || !field) return;
+    var ev = events.find(function(x){ return x.id === id; });
+    if (!ev) return;
+    ev[field] = field === 'amount' ? (parseFloat(inp.value)||0) : inp.value;
+    persistEvent(ev).then(function(){ renderEvents(); });
+  }, { once: true });
+
+  grid.addEventListener('input', function(e) {
+    var inp = e.target;
+    var id = parseInt(inp.dataset.evid);
+    var field = inp.dataset.field;
+    if (!id || !field) return;
+    var ev = events.find(function(x){ return x.id === id; });
+    if (!ev) return;
+    ev[field] = field === 'amount' ? (parseFloat(inp.value)||0) : inp.value;
+    var committed2 = expenses.filter(function(e){ return e.budget==='vaad'; }).reduce(function(s,e){ return s+e.amount; }, 0);
+    var available2 = VAAD_TOTAL - committed2;
+    var allocated2 = events.reduce(function(s,e){ return s+(parseFloat(e.amount)||0); }, 0);
+    var free2 = available2 - allocated2;
+    var freeEl = bar.querySelectorAll('.ebar-val')[3];
+    var allocEl = bar.querySelectorAll('.ebar-val')[2];
+    if (freeEl)  { freeEl.textContent = fmt(free2);    freeEl.className = 'ebar-val ' + (free2<0?'over':free2<500?'warn':'ok'); }
+    if (allocEl) { allocEl.textContent = fmt(allocated2); allocEl.className = 'ebar-val ' + (allocated2>available2?'over':''); }
+  });
+
+  grid.onclick = function(e) {
+    var btn = e.target.closest('.event-status');
+    if (!btn) return;
+    var id = parseInt(btn.dataset.evid);
+    var ev = events.find(function(x){ return x.id === id; });
+    if (!ev) return;
+    ev.status = STATUS_CYCLE[ev.status] || 'planned';
+    persistEvent(ev).then(function(){ renderEvents(); });
+  };
+}
+
+function subscribeRealtime() {
+  sb.channel('gan-ofer-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_children' }, function(){ if (!skipRealtime) loadAll(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_expenses' }, function(){ if (!skipRealtime) loadAll(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_events' }, function(){ if (!skipRealtime) loadAll(); })
+    .subscribe();
+}
+
+loadAll();
+subscribeRealtime();
+</script>
