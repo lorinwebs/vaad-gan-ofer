@@ -251,6 +251,12 @@ body::before {
   transition: transform 0.12s ease, opacity 0.12s;
 }
 .status-badge:hover { transform: translateY(-1px); }
+.status-badge.is-locked {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.92;
+}
+.status-badge.is-locked:hover { transform: none; }
 .status-badge.paid-vaad { background: var(--vaad); color: #fff; }
 .status-badge.unpaid-vaad { background: var(--warn-soft); color: var(--warn); border-color: rgba(184,106,20,0.35); }
 .status-badge.paid-fruits { background: var(--fruits); color: #fff; }
@@ -492,7 +498,7 @@ footer {
 
   <!-- Children -->
   <div class="section-head">
-    <span class="section-label">ילדים והורים</span>
+    <span class="section-label">ילדים — ממתינים לתשלום למעלה</span>
   </div>
   <div class="list" id="list"></div>
   <div class="alerts" id="alerts"></div>
@@ -729,10 +735,16 @@ function render() {
   document.getElementById('f-pct').textContent        = fPct + '%';
   document.getElementById('f-bar').style.width        = fPct + '%';
 
-  // Children list
+  // Children list — unpaid first; paid badges not clickable
   var list = document.getElementById('list');
   list.innerHTML = '';
-  children.forEach(function(child, idx) {
+  var sorted = children.slice().sort(function(a, b) {
+    var aScore = (!a.vaad ? 2 : 0) + (!a.fruits ? 1 : 0);
+    var bScore = (!b.vaad ? 2 : 0) + (!b.fruits ? 1 : 0);
+    if (bScore !== aScore) return bScore - aScore;
+    return (a.name || '').localeCompare(b.name || '', 'he');
+  });
+  sorted.forEach(function(child, idx) {
     var row = document.createElement('div');
     row.className = 'child-row';
     var parentsHtml = child.p.map(function(par) {
@@ -742,30 +754,35 @@ function render() {
         '<a class="wa-btn" href="' + waUrl(par.ph) + '" target="_blank" rel="noopener">' + WA_SVG + ' וואצאפ</a>' +
       '</div>';
     }).join('');
+    function statusEl(type, paid, paidClass, unpaidClass, paidLabel, unpaidLabel) {
+      if (paid) {
+        return '<span class="status-badge ' + paidClass + ' is-locked" aria-disabled="true">' + paidLabel + '</span>';
+      }
+      return '<button type="button" class="status-badge ' + unpaidClass + '" data-id="' + child.id + '" data-type="' + type + '">' + unpaidLabel + '</button>';
+    }
     row.innerHTML =
       '<div class="child-info"><div class="child-num">' + (idx+1) + '</div><div class="child-name">' + child.name + '</div></div>' +
       '<div class="child-budgets">' +
-        '<button class="status-badge ' + (child.vaad ? 'paid-vaad' : 'unpaid-vaad') + '" data-id="' + child.id + '" data-type="vaad">' + (child.vaad ? 'שולם ועד' : 'ממתין ועד') + '</button>' +
-        '<button class="status-badge ' + (child.fruits ? 'paid-fruits' : 'unpaid-fruits') + '" data-id="' + child.id + '" data-type="fruits">' + (child.fruits ? 'שולם פירות' : 'ממתין פירות') + '</button>' +
+        statusEl('vaad', child.vaad, 'paid-vaad', 'unpaid-vaad', 'שולם ועד', 'ממתין ועד') +
+        statusEl('fruits', child.fruits, 'paid-fruits', 'unpaid-fruits', 'שולם פירות', 'ממתין פירות') +
       '</div>' +
       '<div class="child-parents">' + parentsHtml + '</div>';
     list.appendChild(row);
   });
   list.onclick = function(e) {
-    var btn = e.target.closest('.status-badge');
+    var btn = e.target.closest('button.status-badge');
     if (!btn) return;
     var id = parseInt(btn.dataset.id);
     var type = btn.dataset.type;
     var c = children.find(function(x){ return x.id === id; });
-    if (!c) return;
-    var next = !c[type];
+    if (!c || c[type]) return;
     var patch = {};
-    patch[type] = next;
+    patch[type] = true;
     patch.updated_at = new Date().toISOString();
     withSave(async function() {
       var res = await sb.from('gan_ofer_children').update(patch).eq('id', id);
       if (res.error) throw res.error;
-      c[type] = next;
+      c[type] = true;
       render();
     });
   };
