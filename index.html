@@ -250,29 +250,66 @@ body::before {
 .ebar-val.warn { color: var(--warn); }
 .ebar-val.over { color: var(--danger); }
 
-.events-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+.events-grid {
+  position: relative;
+  display: flex; flex-direction: column; gap: 0.55rem;
+  padding-inline-start: 1.25rem;
+}
+.events-grid::before {
+  content: "";
+  position: absolute; inset-block: 0.5rem; inset-inline-start: 0.32rem;
+  width: 2px; background: rgba(15,107,92,0.28); border-radius: 2px;
+}
 .event-row {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 0.75rem 0.95rem;
-  display: grid; grid-template-columns: 1fr 7.2rem 1fr auto;
-  gap: 0.65rem; align-items: center;
-  transition: border-color 0.15s, transform 0.15s;
+  padding: 0.65rem 0.75rem;
+  display: grid;
+  grid-template-columns: auto 9.4rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
+  gap: 0.5rem; align-items: center;
+  transition: border-color 0.15s;
 }
-.event-row:hover { border-color: rgba(15,107,92,0.35); transform: translateY(-1px); }
+.event-row::before {
+  content: "";
+  position: absolute; inset-block-start: 1.15rem; inset-inline-start: -1.22rem;
+  width: 0.68rem; height: 0.68rem; border-radius: 50%;
+  background: var(--vaad); border: 2px solid var(--bg1);
+}
+.event-row.is-past::before { background: var(--muted); }
+.event-row:hover { border-color: rgba(15,107,92,0.35); }
+.event-move { display: flex; flex-direction: column; gap: 0.15rem; }
+.event-move-btn {
+  font-family: inherit; font-size: 0.68rem; line-height: 1;
+  width: 1.45rem; height: 1.15rem; padding: 0;
+  border: 1px solid var(--line); border-radius: 5px;
+  background: #fff; color: var(--muted); cursor: pointer;
+}
+.event-move-btn:hover:not(:disabled) { border-color: var(--vaad); color: var(--vaad); }
+.event-move-btn:disabled { opacity: 0.3; cursor: default; }
 .event-name { font-size: 0.95rem; font-weight: 700; }
 .event-emoji { font-size: 1rem; margin-inline-end: 0.35rem; }
-.event-amount-wrap { display: flex; align-items: center; gap: 0.25rem; }
-.event-amount-inp, .event-notes-inp, .form-input {
+.event-amount-wrap { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+.event-date-inp, .event-amount-inp, .event-notes-inp, .form-input {
   font-family: inherit; font-size: 0.9rem; font-weight: 500;
   background: var(--surface-solid); border: 1px solid var(--line);
   border-radius: 8px; padding: 0.45rem 0.65rem; color: var(--ink);
   outline: none; width: 100%; transition: border-color 0.15s;
 }
 .event-amount-inp { direction: ltr; text-align: end; width: 5.4rem; font-weight: 700; }
-.event-amount-inp:focus, .event-notes-inp:focus, .form-input:focus { border-color: var(--vaad); }
+.event-date-inp { direction: ltr; unicode-bidi: isolate; width: 9.4rem; font-weight: 700; text-align: start; }
+.event-date-inp:focus, .event-amount-inp:focus, .event-notes-inp:focus, .form-input:focus { border-color: var(--vaad); }
 .event-shekel { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.event-nofund {
+  font-size: 0.72rem; font-weight: 700; padding: 0.35rem 0.55rem;
+  border-radius: 8px; cursor: pointer; border: 1px solid var(--line);
+  font-family: inherit; white-space: nowrap; background: #fff; color: var(--muted);
+}
+.event-nofund.is-on {
+  background: #E7EEEA; color: var(--ink); border-color: rgba(20, 34, 28, 0.28);
+}
+.event-amount-inp:disabled { color: var(--muted); cursor: default; }
 .event-status {
   font-size: 0.72rem; font-weight: 700; padding: 0.35rem 0.65rem;
   border-radius: 8px; cursor: pointer; border: 1px solid var(--line);
@@ -281,6 +318,54 @@ body::before {
 .est-planned { color: var(--muted); }
 .est-progress { background: var(--warn-soft); color: var(--warn); border-color: rgba(184,106,20,0.3); }
 .est-done { background: var(--vaad-soft); color: var(--vaad); border-color: rgba(15,107,92,0.3); }
+
+.tl-add {
+  font-family: inherit; font-size: 0.78rem; font-weight: 700;
+  color: #fff; background: var(--vaad); border: none; border-radius: 8px;
+  padding: 0.35rem 0.7rem; cursor: pointer; transition: transform 0.15s ease, opacity 0.15s;
+}
+.tl-add:hover { opacity: 0.9; transform: translateY(-1px); }
+.timeline {
+  position: relative; display: flex; flex-direction: column; gap: 0.6rem;
+  padding-inline-start: 1.4rem;
+}
+.timeline::before {
+  content: ""; position: absolute; inset-block: 0.6rem; inset-inline-start: 0.4rem;
+  width: 2px; background: rgba(15,107,92,0.25); border-radius: 2px;
+}
+.tl-item {
+  position: relative;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 0.7rem 0.9rem; display: flex; flex-direction: column; gap: 0.45rem;
+}
+.tl-item::before {
+  content: ""; position: absolute; inset-block-start: 1.15rem; inset-inline-start: -1.32rem;
+  width: 0.7rem; height: 0.7rem; border-radius: 50%;
+  background: var(--vaad); border: 2px solid var(--bg1);
+}
+.tl-item.is-past::before { background: var(--muted); }
+.tl-item.no-date::before { background: #fff; border-color: var(--vaad); }
+.tl-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.tl-emoji { font-size: 1.05rem; }
+.tl-date, .tl-title, .tl-details {
+  font-family: inherit; font-size: 0.9rem; color: var(--ink);
+  background: var(--surface-solid); border: 1px solid var(--line);
+  border-radius: 8px; padding: 0.4rem 0.6rem; outline: none; transition: border-color 0.15s;
+}
+.tl-date { direction: ltr; font-weight: 700; width: 9.6rem; }
+.tl-title { flex: 1; min-width: 10rem; font-weight: 700; }
+.tl-details { width: 100%; resize: vertical; line-height: 1.6; font-size: 0.86rem; }
+.tl-date:focus, .tl-title:focus, .tl-details:focus { border-color: var(--vaad); }
+.tl-del {
+  font-family: inherit; font-size: 0.8rem; color: var(--muted);
+  background: transparent; border: 1px solid var(--line); border-radius: 8px;
+  padding: 0.3rem 0.55rem; cursor: pointer;
+}
+.tl-del:hover { color: var(--danger); border-color: rgba(180,35,24,0.35); }
+.tl-notice {
+  background: var(--warn-soft); color: var(--warn); border-radius: var(--radius);
+  padding: 0.85rem 1rem; font-size: 0.88rem; font-weight: 600;
+}
 
 .list { display: flex; flex-direction: column; gap: 0.45rem; }
 .child-row {
@@ -405,8 +490,9 @@ footer {
 
 @media (max-width: 720px) {
   .budgets, .events-bar, .unpaid-cols { grid-template-columns: 1fr; }
-  .event-row { grid-template-columns: 1fr auto; }
-  .event-notes-inp { grid-column: 1 / -1; }
+  .event-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .event-name, .event-notes-inp, .event-amount-wrap { grid-column: 2 / -1; }
+  .event-move { grid-row: 1 / span 3; grid-column: 1; }
   .child-row { grid-template-columns: 1fr 1fr; }
   .child-parents { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 0.55rem; }
 }
@@ -552,6 +638,13 @@ footer {
   <div class="events-bar" id="events-bar"></div>
   <div class="events-grid" id="events-grid"></div>
 
+  <!-- Timeline -->
+  <div class="section-head">
+    <span class="section-label">ציר זמן אירועים</span>
+    <button type="button" class="tl-add" id="tl-add">+ הוסף</button>
+  </div>
+  <div class="timeline" id="timeline"></div>
+
   <!-- Children -->
   <div class="section-head">
     <span class="section-label">ילדים — ממתינים לתשלום למעלה</span>
@@ -610,9 +703,12 @@ async function loadAll() {
       id: row.id,
       emoji: row.emoji || '',
       name: row.name,
-      amount: Number(row.amount) || 0,
+      date: row.event_date || '',
+      amount: Number(row.amount) < 0 ? 0 : (Number(row.amount) || 0),
+      noMoney: Number(row.amount) < 0,
       notes: row.notes || '',
-      status: row.status || 'planned'
+      status: row.status || 'planned',
+      sort: Number(row.sort_order) || 0
     };
   });
   render();
@@ -876,13 +972,40 @@ var STATUS_CLASS = { planned:'est-planned', progress:'est-progress', done:'est-d
 function persistEvent(ev) {
   return withSave(async function() {
     var res = await sb.from('gan_ofer_events').update({
-      amount: Number(ev.amount) || 0,
+      event_date: ev.date || null,
+      amount: ev.noMoney ? -1 : (Number(ev.amount) || 0),
       notes: ev.notes || '',
       status: ev.status || 'planned',
+      sort_order: ev.sort,
       updated_at: new Date().toISOString()
     }).eq('id', ev.id);
     if (res.error) throw res.error;
   });
+}
+
+function moveEvent(id, dir) {
+  var i = events.findIndex(function(x){ return x.id === id; });
+  var j = i + dir;
+  if (i < 0 || j < 0 || j >= events.length) return;
+  var moved = events.splice(i, 1)[0];
+  events.splice(j, 0, moved);
+  events.forEach(function(ev, index){ ev.sort = index; });
+  withSave(async function() {
+    var results = await Promise.all(events.map(function(ev) {
+      return sb.from('gan_ofer_events').update({
+        sort_order: ev.sort,
+        updated_at: new Date().toISOString()
+      }).eq('id', ev.id);
+    }));
+    var failed = results.find(function(res){ return res.error; });
+    if (failed) throw failed.error;
+    renderEvents();
+  });
+}
+
+function eventMoney(ev) {
+  if (ev.noMoney) return 0;
+  return parseFloat(ev.amount) || 0;
 }
 
 function renderEvents() {
@@ -890,7 +1013,7 @@ function renderEvents() {
   var committed = expenses.filter(function(e){ return e.budget==='vaad'; })
                           .reduce(function(s,e){ return s+e.amount; }, 0);
   var available = VAAD_TOTAL - committed;
-  var allocated = events.reduce(function(s,e){ return s + (parseFloat(e.amount)||0); }, 0);
+  var allocated = events.reduce(function(s,e){ return s + eventMoney(e); }, 0);
   var free = available - allocated;
 
   // Summary bar
@@ -901,20 +1024,27 @@ function renderEvents() {
     '<div class="ebar-cell"><div class="ebar-label">מוקצה לאירועים</div><div class="ebar-val ' + (allocated > available ? 'over' : '') + '">' + fmt(allocated) + '</div></div>' +
     '<div class="ebar-cell"><div class="ebar-label">פנוי לחלוקה</div><div class="ebar-val ' + (free < 0 ? 'over' : free < 500 ? 'warn' : 'ok') + '">' + fmt(free) + '</div></div>';
 
-  // Events grid
+  // Events timeline
   var grid = document.getElementById('events-grid');
+  var today = new Date().toISOString().slice(0, 10);
   grid.innerHTML = '';
-  events.forEach(function(ev) {
+  events.forEach(function(ev, index) {
     var row = document.createElement('div');
-    row.className = 'event-row';
+    row.className = 'event-row' + (ev.date && ev.date < today ? ' is-past' : '');
     row.innerHTML =
-      '<div class="event-name"><span class="event-emoji">' + ev.emoji + '</span>' + ev.name + '</div>' +
-      '<div class="event-amount-wrap">' +
-        '<input class="event-amount-inp" type="number" min="0" value="' + (ev.amount||'') + '" placeholder="0" data-evid="' + ev.id + '" data-field="amount">' +
-        '<span class="event-shekel">₪</span>' +
+      '<div class="event-move">' +
+        '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="-1" aria-label="העבר לפני"' + (index === 0 ? ' disabled' : '') + '>▲</button>' +
+        '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="1" aria-label="העבר אחרי"' + (index === events.length - 1 ? ' disabled' : '') + '>▼</button>' +
       '</div>' +
-      '<input class="event-notes-inp" type="text" value="' + (ev.notes||'') + '" placeholder="הערות..." data-evid="' + ev.id + '" data-field="notes">' +
-      '<button class="event-status ' + STATUS_CLASS[ev.status] + '" data-evid="' + ev.id + '">' + STATUS_LABEL[ev.status] + '</button>';
+      '<input class="event-date-inp" type="date" value="' + escHtml(ev.date) + '" data-evid="' + ev.id + '" data-field="date" aria-label="תאריך">' +
+      '<div class="event-name"><span class="event-emoji">' + escHtml(ev.emoji) + '</span>' + escHtml(ev.name) + '</div>' +
+      '<div class="event-amount-wrap">' +
+        '<input class="event-amount-inp" type="number" min="0" value="' + (ev.noMoney ? '' : (ev.amount||'')) + '" placeholder="' + (ev.noMoney ? '—' : '0') + '" data-evid="' + ev.id + '" data-field="amount"' + (ev.noMoney ? ' disabled' : '') + '>' +
+        '<span class="event-shekel">₪</span>' +
+        '<button type="button" class="event-nofund' + (ev.noMoney ? ' is-on' : '') + '" data-evid="' + ev.id + '" aria-pressed="' + (ev.noMoney ? 'true' : 'false') + '">לא צריך כסף</button>' +
+      '</div>' +
+      '<input class="event-notes-inp" type="text" value="' + escHtml(ev.notes) + '" placeholder="הערות..." data-evid="' + ev.id + '" data-field="notes">' +
+      '<button type="button" class="event-status ' + STATUS_CLASS[ev.status] + '" data-evid="' + ev.id + '">' + STATUS_LABEL[ev.status] + '</button>';
     grid.appendChild(row);
   });
 
@@ -925,7 +1055,9 @@ function renderEvents() {
     if (!id || !field) return;
     var ev = events.find(function(x){ return x.id === id; });
     if (!ev) return;
-    ev[field] = field === 'amount' ? (parseFloat(inp.value)||0) : inp.value;
+    if (field === 'amount') { ev.noMoney = false; ev.amount = parseFloat(inp.value)||0; }
+    else if (field === 'date') ev.date = inp.value;
+    else ev[field] = inp.value;
     persistEvent(ev).then(function(){ renderEvents(); });
   }, { once: true });
 
@@ -936,10 +1068,12 @@ function renderEvents() {
     if (!id || !field) return;
     var ev = events.find(function(x){ return x.id === id; });
     if (!ev) return;
-    ev[field] = field === 'amount' ? (parseFloat(inp.value)||0) : inp.value;
+    if (field === 'amount') { ev.noMoney = false; ev.amount = parseFloat(inp.value)||0; }
+    else if (field === 'date') ev.date = inp.value;
+    else ev[field] = inp.value;
     var committed2 = expenses.filter(function(e){ return e.budget==='vaad'; }).reduce(function(s,e){ return s+e.amount; }, 0);
     var available2 = VAAD_TOTAL - committed2;
-    var allocated2 = events.reduce(function(s,e){ return s+(parseFloat(e.amount)||0); }, 0);
+    var allocated2 = events.reduce(function(s,e){ return s + eventMoney(e); }, 0);
     var free2 = available2 - allocated2;
     var freeEl = bar.querySelectorAll('.ebar-val')[3];
     var allocEl = bar.querySelectorAll('.ebar-val')[2];
@@ -948,6 +1082,22 @@ function renderEvents() {
   });
 
   grid.onclick = function(e) {
+    var moveBtn = e.target.closest('.event-move-btn');
+    if (moveBtn) {
+      if (moveBtn.disabled) return;
+      moveEvent(parseInt(moveBtn.dataset.evid), Number(moveBtn.dataset.dir));
+      return;
+    }
+    var noBtn = e.target.closest('.event-nofund');
+    if (noBtn) {
+      var noId = parseInt(noBtn.dataset.evid);
+      var noEv = events.find(function(x){ return x.id === noId; });
+      if (!noEv) return;
+      noEv.noMoney = !noEv.noMoney;
+      if (noEv.noMoney) noEv.amount = 0;
+      persistEvent(noEv).then(function(){ renderEvents(); });
+      return;
+    }
     var btn = e.target.closest('.event-status');
     if (!btn) return;
     var id = parseInt(btn.dataset.evid);
@@ -958,14 +1108,144 @@ function renderEvents() {
   };
 }
 
+// ── Timeline ──
+var timeline = [];
+var timelineReady = true;
+
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function sortTimeline() {
+  timeline.sort(function(a, b) {
+    if (a.date && b.date && a.date !== b.date) return a.date < b.date ? -1 : 1;
+    if (!a.date !== !b.date) return a.date ? -1 : 1;
+    return a.sort - b.sort;
+  });
+}
+
+async function loadTimeline() {
+  var res = await sb.from('gan_ofer_timeline').select('*').order('sort_order');
+  if (res.error) {
+    console.error(res.error);
+    timelineReady = false;
+    timeline = [];
+    renderTimeline();
+    return;
+  }
+  timelineReady = true;
+  timeline = (res.data || []).map(function(row) {
+    return {
+      id: Number(row.id),
+      date: row.event_date || '',
+      emoji: row.emoji || '',
+      title: row.title || '',
+      details: row.details || '',
+      sort: Number(row.sort_order) || 0
+    };
+  });
+  sortTimeline();
+  renderTimeline();
+}
+
+function renderTimeline() {
+  var el = document.getElementById('timeline');
+  document.getElementById('tl-add').hidden = !timelineReady;
+  if (!timelineReady) {
+    el.innerHTML = '<div class="tl-notice">ציר הזמן עדיין לא מוגדר בענן — יש להריץ את הקובץ supabase/timeline.sql ב-Supabase</div>';
+    return;
+  }
+  if (!timeline.length) {
+    el.innerHTML = '<div class="tl-notice">אין עדיין אירועים בציר הזמן</div>';
+    return;
+  }
+  var today = new Date().toISOString().slice(0, 10);
+  el.innerHTML = timeline.map(function(it) {
+    var cls = 'tl-item' + (!it.date ? ' no-date' : it.date < today ? ' is-past' : '');
+    var rows = Math.max(2, it.details.split('\n').length);
+    return '<div class="' + cls + '" data-tlid="' + it.id + '">' +
+      '<div class="tl-head">' +
+        '<input class="tl-date" type="date" value="' + escHtml(it.date) + '" data-field="date" aria-label="תאריך">' +
+        (it.emoji ? '<span class="tl-emoji" aria-hidden="true">' + escHtml(it.emoji) + '</span>' : '') +
+        '<input class="tl-title" type="text" value="' + escHtml(it.title) + '" data-field="title" aria-label="שם האירוע">' +
+        '<button type="button" class="tl-del" aria-label="מחיקת ' + escHtml(it.title) + '">✕</button>' +
+      '</div>' +
+      '<textarea class="tl-details" rows="' + rows + '" data-field="details" placeholder="פרטים..." aria-label="פרטים">' + escHtml(it.details) + '</textarea>' +
+    '</div>';
+  }).join('');
+}
+
+function timelineItemFrom(target) {
+  var row = target.closest('.tl-item');
+  if (!row) return null;
+  var id = Number(row.dataset.tlid);
+  return timeline.find(function(x){ return x.id === id; }) || null;
+}
+
+function initTimeline() {
+  var el = document.getElementById('timeline');
+
+  el.addEventListener('change', function(e) {
+    var field = e.target.dataset.field;
+    var it = timelineItemFrom(e.target);
+    if (!it || !field) return;
+    var patch = { updated_at: new Date().toISOString() };
+    if (field === 'date') { it.date = e.target.value; patch.event_date = it.date || null; }
+    if (field === 'title') { it.title = e.target.value.trim() || it.title; patch.title = it.title; }
+    if (field === 'details') { it.details = e.target.value; patch.details = it.details; }
+    withSave(async function() {
+      var res = await sb.from('gan_ofer_timeline').update(patch).eq('id', it.id);
+      if (res.error) throw res.error;
+    }).then(function() {
+      if (field === 'date') { sortTimeline(); renderTimeline(); }
+    });
+  });
+
+  el.addEventListener('click', function(e) {
+    if (!e.target.closest('.tl-del')) return;
+    var it = timelineItemFrom(e.target);
+    if (!it || !confirm('למחוק את "' + it.title + '" מציר הזמן?')) return;
+    withSave(async function() {
+      var res = await sb.from('gan_ofer_timeline').delete().eq('id', it.id);
+      if (res.error) throw res.error;
+      timeline = timeline.filter(function(x){ return x.id !== it.id; });
+      renderTimeline();
+    });
+  });
+
+  document.getElementById('tl-add').addEventListener('click', function() {
+    var nextSort = timeline.reduce(function(m, x){ return Math.max(m, x.sort); }, 0) + 1;
+    withSave(async function() {
+      var res = await sb.from('gan_ofer_timeline')
+        .insert({ title: 'אירוע חדש', details: '', sort_order: nextSort })
+        .select().single();
+      if (res.error) throw res.error;
+      var row = res.data;
+      timeline.push({ id: Number(row.id), date: '', emoji: '', title: row.title, details: '', sort: nextSort });
+      sortTimeline();
+      renderTimeline();
+      var inp = document.querySelector('.tl-item[data-tlid="' + row.id + '"] .tl-title');
+      if (inp) { inp.focus(); inp.select(); }
+    });
+  });
+}
+
 function subscribeRealtime() {
   sb.channel('gan-ofer-live')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_children' }, function(){ if (!skipRealtime) loadAll(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_expenses' }, function(){ if (!skipRealtime) loadAll(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_events' }, function(){ if (!skipRealtime) loadAll(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_timeline' }, function(){
+      if (skipRealtime || document.activeElement.closest('#timeline')) return;
+      loadTimeline();
+    })
     .subscribe();
 }
 
+initTimeline();
 loadAll();
+loadTimeline();
 subscribeRealtime();
 </script>
