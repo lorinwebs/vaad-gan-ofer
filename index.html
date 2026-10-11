@@ -288,8 +288,7 @@ body::before {
 }
 .event-move-btn:hover:not(:disabled) { border-color: var(--vaad); color: var(--vaad); }
 .event-move-btn:disabled { opacity: 0.3; cursor: default; }
-.event-name { font-size: 0.95rem; font-weight: 700; }
-.event-emoji { font-size: 1rem; margin-inline-end: 0.35rem; }
+.event-emoji { font-size: 1rem; }
 .event-amount-wrap { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
 .event-date-inp, .event-amount-inp, .event-notes-inp, .form-input {
   font-family: inherit; font-size: 0.9rem; font-weight: 500;
@@ -319,53 +318,15 @@ body::before {
 .est-progress { background: var(--warn-soft); color: var(--warn); border-color: rgba(184,106,20,0.3); }
 .est-done { background: var(--vaad-soft); color: var(--vaad); border-color: rgba(15,107,92,0.3); }
 
-.tl-add {
+.event-add {
   font-family: inherit; font-size: 0.78rem; font-weight: 700;
   color: #fff; background: var(--vaad); border: none; border-radius: 8px;
-  padding: 0.35rem 0.7rem; cursor: pointer; transition: transform 0.15s ease, opacity 0.15s;
+  padding: 0.35rem 0.7rem; cursor: pointer;
 }
-.tl-add:hover { opacity: 0.9; transform: translateY(-1px); }
-.timeline {
-  position: relative; display: flex; flex-direction: column; gap: 0.6rem;
-  padding-inline-start: 1.4rem;
-}
-.timeline::before {
-  content: ""; position: absolute; inset-block: 0.6rem; inset-inline-start: 0.4rem;
-  width: 2px; background: rgba(15,107,92,0.25); border-radius: 2px;
-}
-.tl-item {
-  position: relative;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 0.7rem 0.9rem; display: flex; flex-direction: column; gap: 0.45rem;
-}
-.tl-item::before {
-  content: ""; position: absolute; inset-block-start: 1.15rem; inset-inline-start: -1.32rem;
-  width: 0.7rem; height: 0.7rem; border-radius: 50%;
-  background: var(--vaad); border: 2px solid var(--bg1);
-}
-.tl-item.is-past::before { background: var(--muted); }
-.tl-item.no-date::before { background: #fff; border-color: var(--vaad); }
-.tl-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.tl-emoji { font-size: 1.05rem; }
-.tl-date, .tl-title, .tl-details {
-  font-family: inherit; font-size: 0.9rem; color: var(--ink);
-  background: var(--surface-solid); border: 1px solid var(--line);
-  border-radius: 8px; padding: 0.4rem 0.6rem; outline: none; transition: border-color 0.15s;
-}
-.tl-date { direction: ltr; font-weight: 700; width: 9.6rem; }
-.tl-title { flex: 1; min-width: 10rem; font-weight: 700; }
-.tl-details { width: 100%; resize: vertical; line-height: 1.6; font-size: 0.86rem; }
-.tl-date:focus, .tl-title:focus, .tl-details:focus { border-color: var(--vaad); }
-.tl-del {
-  font-family: inherit; font-size: 0.8rem; color: var(--muted);
-  background: transparent; border: 1px solid var(--line); border-radius: 8px;
-  padding: 0.3rem 0.55rem; cursor: pointer;
-}
-.tl-del:hover { color: var(--danger); border-color: rgba(180,35,24,0.35); }
-.tl-notice {
-  background: var(--warn-soft); color: var(--warn); border-radius: var(--radius);
-  padding: 0.85rem 1rem; font-size: 0.88rem; font-weight: 600;
-}
+.event-add:hover { opacity: 0.9; }
+.event-name { display: flex; align-items: center; gap: 0.35rem; min-width: 0; font-size: 0.95rem; font-weight: 700; }
+.event-name-inp { font-weight: 700; }
+textarea.event-notes-inp { resize: vertical; line-height: 1.45; min-height: 2.6rem; }
 
 .list { display: flex; flex-direction: column; gap: 0.45rem; }
 .child-row {
@@ -634,16 +595,10 @@ footer {
   <!-- Events planning -->
   <div class="section-head" style="margin-top:0.25rem">
     <span class="section-label">תכנון אירועים</span>
+    <button type="button" class="event-add" id="event-add">+ הוסף</button>
   </div>
   <div class="events-bar" id="events-bar"></div>
   <div class="events-grid" id="events-grid"></div>
-
-  <!-- Timeline -->
-  <div class="section-head">
-    <span class="section-label">ציר זמן אירועים</span>
-    <button type="button" class="tl-add" id="tl-add">+ הוסף</button>
-  </div>
-  <div class="timeline" id="timeline"></div>
 
   <!-- Children -->
   <div class="section-head">
@@ -973,6 +928,7 @@ function persistEvent(ev) {
   return withSave(async function() {
     var res = await sb.from('gan_ofer_events').update({
       event_date: ev.date || null,
+      name: ev.name || '',
       amount: ev.noMoney ? -1 : (Number(ev.amount) || 0),
       notes: ev.notes || '',
       status: ev.status || 'planned',
@@ -1037,13 +993,15 @@ function renderEvents() {
         '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="1" aria-label="העבר אחרי"' + (index === events.length - 1 ? ' disabled' : '') + '>▼</button>' +
       '</div>' +
       '<input class="event-date-inp" type="date" value="' + escHtml(ev.date) + '" data-evid="' + ev.id + '" data-field="date" aria-label="תאריך">' +
-      '<div class="event-name"><span class="event-emoji">' + escHtml(ev.emoji) + '</span>' + escHtml(ev.name) + '</div>' +
+      '<div class="event-name"><span class="event-emoji">' + escHtml(ev.emoji) + '</span>' +
+        '<input class="event-name-inp event-notes-inp" type="text" value="' + escHtml(ev.name) + '" data-evid="' + ev.id + '" data-field="name" aria-label="שם האירוע">' +
+      '</div>' +
       '<div class="event-amount-wrap">' +
         '<input class="event-amount-inp" type="number" min="0" value="' + (ev.noMoney ? '' : (ev.amount||'')) + '" placeholder="' + (ev.noMoney ? '—' : '0') + '" data-evid="' + ev.id + '" data-field="amount"' + (ev.noMoney ? ' disabled' : '') + '>' +
         '<span class="event-shekel">₪</span>' +
         '<button type="button" class="event-nofund' + (ev.noMoney ? ' is-on' : '') + '" data-evid="' + ev.id + '" aria-pressed="' + (ev.noMoney ? 'true' : 'false') + '">לא צריך כסף</button>' +
       '</div>' +
-      '<input class="event-notes-inp" type="text" value="' + escHtml(ev.notes) + '" placeholder="הערות..." data-evid="' + ev.id + '" data-field="notes">' +
+      '<textarea class="event-notes-inp" rows="' + Math.max(2, (ev.notes.match(/\n/g) || []).length + 1) + '" placeholder="הערות..." data-evid="' + ev.id + '" data-field="notes">' + escHtml(ev.notes) + '</textarea>' +
       '<button type="button" class="event-status ' + STATUS_CLASS[ev.status] + '" data-evid="' + ev.id + '">' + STATUS_LABEL[ev.status] + '</button>';
     grid.appendChild(row);
   });
@@ -1057,6 +1015,7 @@ function renderEvents() {
     if (!ev) return;
     if (field === 'amount') { ev.noMoney = false; ev.amount = parseFloat(inp.value)||0; }
     else if (field === 'date') ev.date = inp.value;
+    else if (field === 'name') ev.name = inp.value.trim() || ev.name;
     else ev[field] = inp.value;
     persistEvent(ev).then(function(){ renderEvents(); });
   }, { once: true });
@@ -1070,6 +1029,7 @@ function renderEvents() {
     if (!ev) return;
     if (field === 'amount') { ev.noMoney = false; ev.amount = parseFloat(inp.value)||0; }
     else if (field === 'date') ev.date = inp.value;
+    else if (field === 'name') ev.name = inp.value;
     else ev[field] = inp.value;
     var committed2 = expenses.filter(function(e){ return e.budget==='vaad'; }).reduce(function(s,e){ return s+e.amount; }, 0);
     var available2 = VAAD_TOTAL - committed2;
@@ -1108,127 +1068,29 @@ function renderEvents() {
   };
 }
 
-// ── Timeline ──
-var timeline = [];
-var timelineReady = true;
-
 function escHtml(s) {
   return String(s).replace(/[&<>"']/g, function(c) {
     return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
   });
 }
 
-function sortTimeline() {
-  timeline.sort(function(a, b) {
-    if (a.date && b.date && a.date !== b.date) return a.date < b.date ? -1 : 1;
-    if (!a.date !== !b.date) return a.date ? -1 : 1;
-    return a.sort - b.sort;
-  });
-}
-
-async function loadTimeline() {
-  var res = await sb.from('gan_ofer_timeline').select('*').order('sort_order');
-  if (res.error) {
-    console.error(res.error);
-    timelineReady = false;
-    timeline = [];
-    renderTimeline();
-    return;
-  }
-  timelineReady = true;
-  timeline = (res.data || []).map(function(row) {
-    return {
-      id: Number(row.id),
-      date: row.event_date || '',
-      emoji: row.emoji || '',
-      title: row.title || '',
-      details: row.details || '',
-      sort: Number(row.sort_order) || 0
-    };
-  });
-  sortTimeline();
-  renderTimeline();
-}
-
-function renderTimeline() {
-  var el = document.getElementById('timeline');
-  document.getElementById('tl-add').hidden = !timelineReady;
-  if (!timelineReady) {
-    el.innerHTML = '<div class="tl-notice">ציר הזמן עדיין לא מוגדר בענן — יש להריץ את הקובץ supabase/timeline.sql ב-Supabase</div>';
-    return;
-  }
-  if (!timeline.length) {
-    el.innerHTML = '<div class="tl-notice">אין עדיין אירועים בציר הזמן</div>';
-    return;
-  }
-  var today = new Date().toISOString().slice(0, 10);
-  el.innerHTML = timeline.map(function(it) {
-    var cls = 'tl-item' + (!it.date ? ' no-date' : it.date < today ? ' is-past' : '');
-    var rows = Math.max(2, it.details.split('\n').length);
-    return '<div class="' + cls + '" data-tlid="' + it.id + '">' +
-      '<div class="tl-head">' +
-        '<input class="tl-date" type="date" value="' + escHtml(it.date) + '" data-field="date" aria-label="תאריך">' +
-        (it.emoji ? '<span class="tl-emoji" aria-hidden="true">' + escHtml(it.emoji) + '</span>' : '') +
-        '<input class="tl-title" type="text" value="' + escHtml(it.title) + '" data-field="title" aria-label="שם האירוע">' +
-        '<button type="button" class="tl-del" aria-label="מחיקת ' + escHtml(it.title) + '">✕</button>' +
-      '</div>' +
-      '<textarea class="tl-details" rows="' + rows + '" data-field="details" placeholder="פרטים..." aria-label="פרטים">' + escHtml(it.details) + '</textarea>' +
-    '</div>';
-  }).join('');
-}
-
-function timelineItemFrom(target) {
-  var row = target.closest('.tl-item');
-  if (!row) return null;
-  var id = Number(row.dataset.tlid);
-  return timeline.find(function(x){ return x.id === id; }) || null;
-}
-
-function initTimeline() {
-  var el = document.getElementById('timeline');
-
-  el.addEventListener('change', function(e) {
-    var field = e.target.dataset.field;
-    var it = timelineItemFrom(e.target);
-    if (!it || !field) return;
-    var patch = { updated_at: new Date().toISOString() };
-    if (field === 'date') { it.date = e.target.value; patch.event_date = it.date || null; }
-    if (field === 'title') { it.title = e.target.value.trim() || it.title; patch.title = it.title; }
-    if (field === 'details') { it.details = e.target.value; patch.details = it.details; }
-    withSave(async function() {
-      var res = await sb.from('gan_ofer_timeline').update(patch).eq('id', it.id);
-      if (res.error) throw res.error;
-    }).then(function() {
-      if (field === 'date') { sortTimeline(); renderTimeline(); }
-    });
-  });
-
-  el.addEventListener('click', function(e) {
-    if (!e.target.closest('.tl-del')) return;
-    var it = timelineItemFrom(e.target);
-    if (!it || !confirm('למחוק את "' + it.title + '" מציר הזמן?')) return;
-    withSave(async function() {
-      var res = await sb.from('gan_ofer_timeline').delete().eq('id', it.id);
-      if (res.error) throw res.error;
-      timeline = timeline.filter(function(x){ return x.id !== it.id; });
-      renderTimeline();
-    });
-  });
-
-  document.getElementById('tl-add').addEventListener('click', function() {
-    var nextSort = timeline.reduce(function(m, x){ return Math.max(m, x.sort); }, 0) + 1;
-    withSave(async function() {
-      var res = await sb.from('gan_ofer_timeline')
-        .insert({ title: 'אירוע חדש', details: '', sort_order: nextSort })
-        .select().single();
-      if (res.error) throw res.error;
-      var row = res.data;
-      timeline.push({ id: Number(row.id), date: '', emoji: '', title: row.title, details: '', sort: nextSort });
-      sortTimeline();
-      renderTimeline();
-      var inp = document.querySelector('.tl-item[data-tlid="' + row.id + '"] .tl-title');
-      if (inp) { inp.focus(); inp.select(); }
-    });
+function addEvent() {
+  var nextId = events.reduce(function(m, ev){ return Math.max(m, Number(ev.id) || 0); }, 0) + 1;
+  var nextSort = events.length;
+  withSave(async function() {
+    var res = await sb.from('gan_ofer_events').insert({
+      id: nextId,
+      emoji: '📌',
+      name: 'אירוע חדש',
+      amount: 0,
+      notes: '',
+      status: 'planned',
+      sort_order: nextSort
+    }).select().single();
+    if (res.error) throw res.error;
+    await loadAll();
+    var inp = document.querySelector('.event-row .event-name-inp[data-evid="' + nextId + '"]');
+    if (inp) { inp.focus(); inp.select(); }
   });
 }
 
@@ -1237,15 +1099,10 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_children' }, function(){ if (!skipRealtime) loadAll(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_expenses' }, function(){ if (!skipRealtime) loadAll(); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_events' }, function(){ if (!skipRealtime) loadAll(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_timeline' }, function(){
-      if (skipRealtime || document.activeElement.closest('#timeline')) return;
-      loadTimeline();
-    })
     .subscribe();
 }
 
-initTimeline();
+document.getElementById('event-add').addEventListener('click', addEvent);
 loadAll();
-loadTimeline();
 subscribeRealtime();
 </script>
