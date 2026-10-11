@@ -271,7 +271,7 @@ body::before {
 }
 .event-main {
   display: grid;
-  grid-template-columns: auto 9.6rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
+  grid-template-columns: 9.6rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
   gap: 0.5rem; align-items: center;
 }
 .kids { margin-top: 1.8rem; }
@@ -295,15 +295,6 @@ body::before {
 }
 .event-row.is-past::before { background: var(--muted); }
 .event-row:hover { border-color: rgba(15,107,92,0.35); }
-.event-move { display: flex; flex-direction: column; gap: 0.15rem; }
-.event-move-btn {
-  font-family: inherit; font-size: 0.68rem; line-height: 1;
-  width: 1.45rem; height: 1.15rem; padding: 0;
-  border: 1px solid var(--line); border-radius: 5px;
-  background: #fff; color: var(--muted); cursor: pointer;
-}
-.event-move-btn:hover:not(:disabled) { border-color: var(--vaad); color: var(--vaad); }
-.event-move-btn:disabled { opacity: 0.3; cursor: default; }
 .event-emoji { font-size: 1rem; }
 .event-amount-wrap { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
 .event-date-inp, .event-amount-inp, .event-notes-inp, .form-input {
@@ -467,9 +458,8 @@ footer {
 
 @media (max-width: 720px) {
   .budgets, .events-bar, .unpaid-cols { grid-template-columns: 1fr; }
-  .event-main { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .event-name, .event-notes-inp, .event-amount-wrap { grid-column: 2 / -1; }
-  .event-move { grid-row: 1 / span 3; grid-column: 1; }
+  .event-main { grid-template-columns: minmax(0, 1fr) auto; }
+  .event-name, .event-notes-inp, .event-amount-wrap { grid-column: 1 / -1; }
   .child-row { grid-template-columns: 1fr 1fr; }
   .child-parents { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 0.55rem; }
 }
@@ -984,24 +974,18 @@ function persistEvent(ev) {
   });
 }
 
-function moveEvent(id, dir) {
-  var i = events.findIndex(function(x){ return x.id === id; });
-  var j = i + dir;
-  if (i < 0 || j < 0 || j >= events.length) return;
-  if ((events[i].date || '') !== (events[j].date || '')) return;
-  var moved = events.splice(i, 1)[0];
-  events.splice(j, 0, moved);
-  events.forEach(function(ev, index){ ev.sort = index; });
+function commitEventDate(ev) {
+  var id = ev.id;
+  renderEvents();
   withSave(async function() {
-    var results = await Promise.all(events.map(function(ev) {
-      return sb.from('gan_ofer_events').update({
-        sort_order: ev.sort,
-        updated_at: new Date().toISOString()
-      }).eq('id', ev.id);
+    var stamp = new Date().toISOString();
+    var results = await Promise.all(events.map(function(item) {
+      var patch = { sort_order: item.sort, updated_at: stamp };
+      if (item.id === id) patch.event_date = item.date || null;
+      return sb.from('gan_ofer_events').update(patch).eq('id', item.id);
     }));
     var failed = results.find(function(res){ return res.error; });
     if (failed) throw failed.error;
-    renderEvents();
   });
 }
 
@@ -1011,6 +995,7 @@ function eventMoney(ev) {
 }
 
 function renderEvents() {
+  sortEvents();
   // Compute committed vaad expenses
   var committed = expenses.filter(function(e){ return e.budget==='vaad'; })
                           .reduce(function(s,e){ return s+e.amount; }, 0);
@@ -1030,17 +1015,11 @@ function renderEvents() {
   var grid = document.getElementById('events-grid');
   var today = new Date().toISOString().slice(0, 10);
   grid.innerHTML = '';
-  events.forEach(function(ev, index) {
+  events.forEach(function(ev) {
     var row = document.createElement('div');
-    var prev = events[index - 1];
-    var next = events[index + 1];
     row.className = 'event-row' + (ev.date && ev.date < today ? ' is-past' : '');
     row.innerHTML =
       '<div class="event-main">' +
-      '<div class="event-move">' +
-        '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="-1" aria-label="העבר לפני"' + (!prev || (prev.date || '') !== (ev.date || '') ? ' disabled' : '') + '>▲</button>' +
-        '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="1" aria-label="העבר אחרי"' + (!next || (next.date || '') !== (ev.date || '') ? ' disabled' : '') + '>▼</button>' +
-      '</div>' +
       '<input class="event-date-inp" type="text" inputmode="decimal" placeholder="24.10.2026" maxlength="10" value="' + escHtml(formatEventDate(ev.date)) + '" data-evid="' + ev.id + '" data-field="date" aria-label="תאריך" autocomplete="off" spellcheck="false">' +
       '<div class="event-name"><span class="event-emoji">' + escHtml(ev.emoji) + '</span>' +
         '<input class="event-name-inp event-notes-inp" type="text" value="' + escHtml(ev.name) + '" data-evid="' + ev.id + '" data-field="name" aria-label="שם האירוע">' +
@@ -1079,30 +1058,29 @@ function renderEvents() {
     var ev = events.find(function(x){ return x.id === parseInt(inp.dataset.evid); });
     if (!ev) return;
     var iso = parseEventDate(inp.value);
-    if (iso === null) { inp.value = formatEventDate(ev.date); return; }
-    if (iso === ev.date) { inp.value = formatEventDate(iso); return; }
+    if (iso === null) {
+      if (document.body.contains(inp)) inp.value = formatEventDate(ev.date);
+      return;
+    }
+    if (iso === ev.date) return;
     ev.date = iso;
-    sortEvents();
-    withSave(async function() {
-      var stamp = new Date().toISOString();
-      var results = await Promise.all(events.map(function(item) {
-        var patch = { sort_order: item.sort, updated_at: stamp };
-        if (item.id === ev.id) patch.event_date = ev.date || null;
-        return sb.from('gan_ofer_events').update(patch).eq('id', item.id);
-      }));
-      var failed = results.find(function(res){ return res.error; });
-      if (failed) throw failed.error;
-      renderEvents();
-    });
+    commitEventDate(ev);
   };
 
   grid.oninput = function(e) {
     var inp = e.target;
     var id = parseInt(inp.dataset.evid);
     var field = inp.dataset.field;
-    if (!id || !field || field === 'date') return;
+    if (!id || !field) return;
     var ev = events.find(function(x){ return x.id === id; });
     if (!ev) return;
+    if (field === 'date') {
+      var iso = parseEventDate(inp.value);
+      if (!iso || iso === ev.date) return;
+      ev.date = iso;
+      commitEventDate(ev);
+      return;
+    }
     if (field === 'amount') { ev.noMoney = false; ev.amount = parseFloat(inp.value)||0; }
     else if (field === 'name') ev.name = inp.value;
     else ev[field] = inp.value;
@@ -1117,12 +1095,6 @@ function renderEvents() {
   };
 
   grid.onclick = function(e) {
-    var moveBtn = e.target.closest('.event-move-btn');
-    if (moveBtn) {
-      if (moveBtn.disabled) return;
-      moveEvent(parseInt(moveBtn.dataset.evid), Number(moveBtn.dataset.dir));
-      return;
-    }
     var noBtn = e.target.closest('.event-nofund');
     if (noBtn) {
       var noId = parseInt(noBtn.dataset.evid);
