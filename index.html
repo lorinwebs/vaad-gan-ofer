@@ -271,7 +271,7 @@ body::before {
 }
 .event-main {
   display: grid;
-  grid-template-columns: auto 9.4rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
+  grid-template-columns: auto 9.6rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
   gap: 0.5rem; align-items: center;
 }
 .kids { margin-top: 1.8rem; }
@@ -313,7 +313,7 @@ body::before {
   outline: none; width: 100%; transition: border-color 0.15s;
 }
 .event-amount-inp { direction: ltr; text-align: end; width: 5.4rem; font-weight: 700; }
-.event-date-inp { direction: ltr; unicode-bidi: isolate; width: 9.4rem; font-weight: 700; text-align: start; }
+.event-date-inp { direction: ltr; unicode-bidi: isolate; width: 100%; font-weight: 700; text-align: start; font-variant-numeric: tabular-nums; }
 .event-date-inp:focus, .event-amount-inp:focus, .event-notes-inp:focus, .form-input:focus { border-color: var(--vaad); }
 .event-shekel { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
 .event-nofund {
@@ -941,6 +941,25 @@ var STATUS_CYCLE = { planned:'progress', progress:'done', done:'planned' };
 var STATUS_LABEL = { planned:'מתוכנן', progress:'בתהליך', done:'הושלם' };
 var STATUS_CLASS = { planned:'est-planned', progress:'est-progress', done:'est-done' };
 
+function formatEventDate(iso) {
+  if (!iso) return '';
+  var p = String(iso).split('-');
+  if (p.length !== 3) return '';
+  return p[2] + '.' + p[1] + '.' + p[0];
+}
+
+function parseEventDate(text) {
+  var raw = String(text || '').trim();
+  if (!raw) return '';
+  var m = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (!m) return null;
+  var day = Number(m[1]), month = Number(m[2]), year = Number(m[3]);
+  if (year < 2000 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  var dt = new Date(year, month - 1, day);
+  if (dt.getFullYear() !== year || dt.getMonth() !== month - 1 || dt.getDate() !== day) return null;
+  return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+}
+
 function sortEvents() {
   events.sort(function(a, b) {
     if (!a.date !== !b.date) return a.date ? -1 : 1;
@@ -1022,7 +1041,7 @@ function renderEvents() {
         '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="-1" aria-label="העבר לפני"' + (!prev || (prev.date || '') !== (ev.date || '') ? ' disabled' : '') + '>▲</button>' +
         '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="1" aria-label="העבר אחרי"' + (!next || (next.date || '') !== (ev.date || '') ? ' disabled' : '') + '>▼</button>' +
       '</div>' +
-      '<input class="event-date-inp" type="date" value="' + escHtml(ev.date) + '" data-evid="' + ev.id + '" data-field="date" aria-label="תאריך">' +
+      '<input class="event-date-inp" type="text" inputmode="decimal" placeholder="24.10.2026" maxlength="10" value="' + escHtml(formatEventDate(ev.date)) + '" data-evid="' + ev.id + '" data-field="date" aria-label="תאריך" autocomplete="off" spellcheck="false">' +
       '<div class="event-name"><span class="event-emoji">' + escHtml(ev.emoji) + '</span>' +
         '<input class="event-name-inp event-notes-inp" type="text" value="' + escHtml(ev.name) + '" data-evid="' + ev.id + '" data-field="name" aria-label="שם האירוע">' +
       '</div>' +
@@ -1050,16 +1069,19 @@ function renderEvents() {
     persistEvent(ev).then(function(){ renderEvents(); });
   };
 
-  // Date inputs fire change on every typed year digit (0002, 0020...), so save only on blur.
+  grid.onkeydown = function(e) {
+    if (e.key === 'Enter' && e.target.dataset.field === 'date') e.target.blur();
+  };
+
   grid.onfocusout = function(e) {
     var inp = e.target;
     if (inp.dataset.field !== 'date') return;
     var ev = events.find(function(x){ return x.id === parseInt(inp.dataset.evid); });
     if (!ev) return;
-    var val = inp.value;
-    if (val && parseInt(val.slice(0, 4)) < 2000) { inp.value = ev.date; return; }
-    if (val === ev.date) return;
-    ev.date = val;
+    var iso = parseEventDate(inp.value);
+    if (iso === null) { inp.value = formatEventDate(ev.date); return; }
+    if (iso === ev.date) { inp.value = formatEventDate(iso); return; }
+    ev.date = iso;
     sortEvents();
     withSave(async function() {
       var stamp = new Date().toISOString();
