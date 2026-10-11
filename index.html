@@ -266,11 +266,16 @@ body::before {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 0.65rem 0.75rem;
+  display: flex; flex-direction: column; gap: 0.45rem;
+  transition: border-color 0.15s;
+}
+.event-main {
   display: grid;
   grid-template-columns: auto 9.4rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
   gap: 0.5rem; align-items: center;
-  transition: border-color 0.15s;
 }
+.event-example { display: flex; flex-direction: column; gap: 0.2rem; }
+.event-example-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
 .event-row::before {
   content: "";
   position: absolute; inset-block-start: 1.15rem; inset-inline-start: -1.22rem;
@@ -290,7 +295,7 @@ body::before {
 .event-move-btn:disabled { opacity: 0.3; cursor: default; }
 .event-emoji { font-size: 1rem; }
 .event-amount-wrap { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
-.event-date-inp, .event-amount-inp, .event-notes-inp, .form-input {
+.event-date-inp, .event-amount-inp, .event-notes-inp, .event-lastyear, .form-input {
   font-family: inherit; font-size: 0.9rem; font-weight: 500;
   background: var(--surface-solid); border: 1px solid var(--line);
   border-radius: 8px; padding: 0.45rem 0.65rem; color: var(--ink);
@@ -298,7 +303,7 @@ body::before {
 }
 .event-amount-inp { direction: ltr; text-align: end; width: 5.4rem; font-weight: 700; }
 .event-date-inp { direction: ltr; unicode-bidi: isolate; width: 9.4rem; font-weight: 700; text-align: start; }
-.event-date-inp:focus, .event-amount-inp:focus, .event-notes-inp:focus, .form-input:focus { border-color: var(--vaad); }
+.event-date-inp:focus, .event-amount-inp:focus, .event-notes-inp:focus, .event-lastyear:focus, .form-input:focus { border-color: var(--vaad); }
 .event-shekel { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
 .event-nofund {
   font-size: 0.72rem; font-weight: 700; padding: 0.35rem 0.55rem;
@@ -326,7 +331,7 @@ body::before {
 .event-add:hover { opacity: 0.9; }
 .event-name { display: flex; align-items: center; gap: 0.35rem; min-width: 0; font-size: 0.95rem; font-weight: 700; }
 .event-name-inp { font-weight: 700; }
-textarea.event-notes-inp { resize: vertical; line-height: 1.45; min-height: 2.6rem; }
+textarea.event-notes-inp, textarea.event-lastyear { resize: vertical; line-height: 1.45; min-height: 2.6rem; }
 
 .list { display: flex; flex-direction: column; gap: 0.45rem; }
 .child-row {
@@ -451,7 +456,7 @@ footer {
 
 @media (max-width: 720px) {
   .budgets, .events-bar, .unpaid-cols { grid-template-columns: 1fr; }
-  .event-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .event-main { grid-template-columns: auto minmax(0, 1fr) auto; }
   .event-name, .event-notes-inp, .event-amount-wrap { grid-column: 2 / -1; }
   .event-move { grid-row: 1 / span 3; grid-column: 1; }
   .child-row { grid-template-columns: 1fr 1fr; }
@@ -662,6 +667,7 @@ async function loadAll() {
       amount: Number(row.amount) < 0 ? 0 : (Number(row.amount) || 0),
       noMoney: Number(row.amount) < 0,
       notes: row.notes || '',
+      lastYear: row.last_year || '',
       status: row.status || 'planned',
       sort: Number(row.sort_order) || 0
     };
@@ -931,6 +937,7 @@ function persistEvent(ev) {
       name: ev.name || '',
       amount: ev.noMoney ? -1 : (Number(ev.amount) || 0),
       notes: ev.notes || '',
+      last_year: ev.lastYear || '',
       status: ev.status || 'planned',
       sort_order: ev.sort,
       updated_at: new Date().toISOString()
@@ -987,7 +994,9 @@ function renderEvents() {
   events.forEach(function(ev, index) {
     var row = document.createElement('div');
     row.className = 'event-row' + (ev.date && ev.date < today ? ' is-past' : '');
+    var exampleRows = Math.max(2, (ev.lastYear.match(/\n/g) || []).length + 1);
     row.innerHTML =
+      '<div class="event-main">' +
       '<div class="event-move">' +
         '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="-1" aria-label="העבר לפני"' + (index === 0 ? ' disabled' : '') + '>▲</button>' +
         '<button type="button" class="event-move-btn" data-evid="' + ev.id + '" data-dir="1" aria-label="העבר אחרי"' + (index === events.length - 1 ? ' disabled' : '') + '>▼</button>' +
@@ -1002,7 +1011,12 @@ function renderEvents() {
         '<button type="button" class="event-nofund' + (ev.noMoney ? ' is-on' : '') + '" data-evid="' + ev.id + '" aria-pressed="' + (ev.noMoney ? 'true' : 'false') + '">לא צריך כסף</button>' +
       '</div>' +
       '<textarea class="event-notes-inp" rows="' + Math.max(2, (ev.notes.match(/\n/g) || []).length + 1) + '" placeholder="הערות..." data-evid="' + ev.id + '" data-field="notes">' + escHtml(ev.notes) + '</textarea>' +
-      '<button type="button" class="event-status ' + STATUS_CLASS[ev.status] + '" data-evid="' + ev.id + '">' + STATUS_LABEL[ev.status] + '</button>';
+      '<button type="button" class="event-status ' + STATUS_CLASS[ev.status] + '" data-evid="' + ev.id + '">' + STATUS_LABEL[ev.status] + '</button>' +
+      '</div>' +
+      '<label class="event-example">' +
+        '<span class="event-example-label">דוגמה משנה שעברה</span>' +
+        '<textarea class="event-lastyear" rows="' + exampleRows + '" placeholder="מה עשינו בשנה שעברה..." data-evid="' + ev.id + '" data-field="lastYear">' + escHtml(ev.lastYear) + '</textarea>' +
+      '</label>';
     grid.appendChild(row);
   });
 
@@ -1084,6 +1098,7 @@ function addEvent() {
       name: 'אירוע חדש',
       amount: 0,
       notes: '',
+      last_year: '',
       status: 'planned',
       sort_order: nextSort
     }).select().single();
