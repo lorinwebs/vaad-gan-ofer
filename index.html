@@ -274,8 +274,28 @@ body::before {
   grid-template-columns: auto 9.4rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
   gap: 0.5rem; align-items: center;
 }
-.event-example { display: flex; flex-direction: column; gap: 0.2rem; }
-.event-example-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+.lastyear { margin-top: 1.8rem; }
+.lastyear > summary {
+  cursor: pointer; list-style: none;
+  font-family: var(--display); font-size: 1rem; font-weight: 700; color: var(--ink);
+  margin-bottom: 0.75rem;
+}
+.lastyear > summary::-webkit-details-marker { display: none; }
+.lastyear > summary::before { content: "▸"; display: inline-block; margin-inline-end: 0.4rem; color: var(--muted); }
+.lastyear[open] > summary::before { content: "▾"; }
+.lastyear-sub { font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-inline-start: 0.4rem; }
+.lastyear-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.lastyear-item {
+  background: rgba(255,255,255,0.5); border: 1px dashed var(--line); border-radius: var(--radius);
+  padding: 0.6rem 0.85rem;
+  display: grid; grid-template-columns: 5.6rem minmax(0, 1fr); gap: 0.2rem 0.75rem;
+}
+.lastyear-date {
+  font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums;
+  direction: ltr; unicode-bidi: isolate; text-align: start;
+}
+.lastyear-title { font-weight: 700; }
+.lastyear-details { grid-column: 2; font-size: 0.86rem; color: var(--muted); white-space: pre-line; line-height: 1.55; }
 .event-row::before {
   content: "";
   position: absolute; inset-block-start: 1.15rem; inset-inline-start: -1.22rem;
@@ -295,7 +315,7 @@ body::before {
 .event-move-btn:disabled { opacity: 0.3; cursor: default; }
 .event-emoji { font-size: 1rem; }
 .event-amount-wrap { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
-.event-date-inp, .event-amount-inp, .event-notes-inp, .event-lastyear, .form-input {
+.event-date-inp, .event-amount-inp, .event-notes-inp, .form-input {
   font-family: inherit; font-size: 0.9rem; font-weight: 500;
   background: var(--surface-solid); border: 1px solid var(--line);
   border-radius: 8px; padding: 0.45rem 0.65rem; color: var(--ink);
@@ -303,7 +323,7 @@ body::before {
 }
 .event-amount-inp { direction: ltr; text-align: end; width: 5.4rem; font-weight: 700; }
 .event-date-inp { direction: ltr; unicode-bidi: isolate; width: 9.4rem; font-weight: 700; text-align: start; }
-.event-date-inp:focus, .event-amount-inp:focus, .event-notes-inp:focus, .event-lastyear:focus, .form-input:focus { border-color: var(--vaad); }
+.event-date-inp:focus, .event-amount-inp:focus, .event-notes-inp:focus, .form-input:focus { border-color: var(--vaad); }
 .event-shekel { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
 .event-nofund {
   font-size: 0.72rem; font-weight: 700; padding: 0.35rem 0.55rem;
@@ -331,7 +351,7 @@ body::before {
 .event-add:hover { opacity: 0.9; }
 .event-name { display: flex; align-items: center; gap: 0.35rem; min-width: 0; font-size: 0.95rem; font-weight: 700; }
 .event-name-inp { font-weight: 700; }
-textarea.event-notes-inp, textarea.event-lastyear { resize: vertical; line-height: 1.45; min-height: 2.6rem; }
+textarea.event-notes-inp { resize: vertical; line-height: 1.45; min-height: 2.6rem; }
 
 .list { display: flex; flex-direction: column; gap: 0.45rem; }
 .child-row {
@@ -605,6 +625,12 @@ footer {
   <div class="events-bar" id="events-bar"></div>
   <div class="events-grid" id="events-grid"></div>
 
+  <!-- Last year's schedule (reference only) -->
+  <details class="lastyear">
+    <summary>לו״ז שנה שעברה<span class="lastyear-sub">דוגמה בלבד · אשכולי תשפ״ו</span></summary>
+    <div class="lastyear-list" id="lastyear-list"></div>
+  </details>
+
   <!-- Children -->
   <div class="section-head">
     <span class="section-label">ילדים — ממתינים לתשלום למעלה</span>
@@ -667,7 +693,6 @@ async function loadAll() {
       amount: Number(row.amount) < 0 ? 0 : (Number(row.amount) || 0),
       noMoney: Number(row.amount) < 0,
       notes: row.notes || '',
-      lastYear: row.last_year || '',
       status: row.status || 'planned',
       sort: Number(row.sort_order) || 0
     };
@@ -937,7 +962,6 @@ function persistEvent(ev) {
       name: ev.name || '',
       amount: ev.noMoney ? -1 : (Number(ev.amount) || 0),
       notes: ev.notes || '',
-      last_year: ev.lastYear || '',
       status: ev.status || 'planned',
       sort_order: ev.sort,
       updated_at: new Date().toISOString()
@@ -994,7 +1018,6 @@ function renderEvents() {
   events.forEach(function(ev, index) {
     var row = document.createElement('div');
     row.className = 'event-row' + (ev.date && ev.date < today ? ' is-past' : '');
-    var exampleRows = Math.max(2, (ev.lastYear.match(/\n/g) || []).length + 1);
     row.innerHTML =
       '<div class="event-main">' +
       '<div class="event-move">' +
@@ -1012,11 +1035,7 @@ function renderEvents() {
       '</div>' +
       '<textarea class="event-notes-inp" rows="' + Math.max(2, (ev.notes.match(/\n/g) || []).length + 1) + '" placeholder="הערות..." data-evid="' + ev.id + '" data-field="notes">' + escHtml(ev.notes) + '</textarea>' +
       '<button type="button" class="event-status ' + STATUS_CLASS[ev.status] + '" data-evid="' + ev.id + '">' + STATUS_LABEL[ev.status] + '</button>' +
-      '</div>' +
-      '<label class="event-example">' +
-        '<span class="event-example-label">דוגמה משנה שעברה</span>' +
-        '<textarea class="event-lastyear" rows="' + exampleRows + '" placeholder="מה עשינו בשנה שעברה..." data-evid="' + ev.id + '" data-field="lastYear">' + escHtml(ev.lastYear) + '</textarea>' +
-      '</label>';
+      '</div>';
     grid.appendChild(row);
   });
 
@@ -1098,7 +1117,6 @@ function addEvent() {
       name: 'אירוע חדש',
       amount: 0,
       notes: '',
-      last_year: '',
       status: 'planned',
       sort_order: nextSort
     }).select().single();
@@ -1107,6 +1125,22 @@ function addEvent() {
     var inp = document.querySelector('.event-row .event-name-inp[data-evid="' + nextId + '"]');
     if (inp) { inp.focus(); inp.select(); }
   });
+}
+
+async function loadLastYear() {
+  var res = await sb.from('gan_ofer_timeline').select('*')
+    .order('event_date', { ascending: true, nullsFirst: false })
+    .order('sort_order');
+  var el = document.getElementById('lastyear-list');
+  if (res.error) { console.error(res.error); el.textContent = 'לא ניתן לטעון את הלו״ז של שנה שעברה'; return; }
+  el.innerHTML = (res.data || []).map(function(row) {
+    var date = row.event_date ? row.event_date.split('-').reverse().join('.') : 'ללא תאריך';
+    return '<div class="lastyear-item">' +
+      '<span class="lastyear-date">' + escHtml(date) + '</span>' +
+      '<span class="lastyear-title">' + escHtml(row.emoji || '') + ' ' + escHtml(row.title || '') + '</span>' +
+      (row.details ? '<div class="lastyear-details">' + escHtml(row.details) + '</div>' : '') +
+    '</div>';
+  }).join('');
 }
 
 function subscribeRealtime() {
@@ -1119,5 +1153,6 @@ function subscribeRealtime() {
 
 document.getElementById('event-add').addEventListener('click', addEvent);
 loadAll();
+loadLastYear();
 subscribeRealtime();
 </script>
