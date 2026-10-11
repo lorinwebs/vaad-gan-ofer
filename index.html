@@ -274,28 +274,19 @@ body::before {
   grid-template-columns: auto 9.4rem minmax(6.5rem, 0.85fr) auto minmax(0, 1.3fr) auto;
   gap: 0.5rem; align-items: center;
 }
-.lastyear { margin-top: 1.8rem; }
-.lastyear > summary {
+.kids { margin-top: 1.8rem; }
+.kids > summary {
   cursor: pointer; list-style: none;
   font-family: var(--display); font-size: 1rem; font-weight: 700; color: var(--ink);
   margin-bottom: 0.75rem;
 }
-.lastyear > summary::-webkit-details-marker { display: none; }
-.lastyear > summary::before { content: "▸"; display: inline-block; margin-inline-end: 0.4rem; color: var(--muted); }
-.lastyear[open] > summary::before { content: "▾"; }
-.lastyear-sub { font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-inline-start: 0.4rem; }
-.lastyear-list { display: flex; flex-direction: column; gap: 0.45rem; }
-.lastyear-item {
-  background: rgba(255,255,255,0.5); border: 1px dashed var(--line); border-radius: var(--radius);
-  padding: 0.6rem 0.85rem;
-  display: grid; grid-template-columns: 5.6rem minmax(0, 1fr); gap: 0.2rem 0.75rem;
+.kids > summary::-webkit-details-marker { display: none; }
+.kids > summary::before {
+  content: "▸"; display: inline-block; margin-inline-end: 0.4rem; color: var(--muted);
 }
-.lastyear-date {
-  font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums;
-  direction: ltr; unicode-bidi: isolate; text-align: start;
-}
-.lastyear-title { font-weight: 700; }
-.lastyear-details { grid-column: 2; font-size: 0.86rem; color: var(--muted); white-space: pre-line; line-height: 1.55; }
+.kids[open] > summary::before { content: "▾"; }
+.kids-sub { font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-inline-start: 0.4rem; }
+.kids:not([open]) > summary { margin-bottom: 0; }
 .event-row::before {
   content: "";
   position: absolute; inset-block-start: 1.15rem; inset-inline-start: -1.22rem;
@@ -625,17 +616,11 @@ footer {
   <div class="events-bar" id="events-bar"></div>
   <div class="events-grid" id="events-grid"></div>
 
-  <!-- Last year's schedule (reference only) -->
-  <details class="lastyear">
-    <summary>לו״ז שנה שעברה<span class="lastyear-sub">דוגמה בלבד · אשכולי תשפ״ו</span></summary>
-    <div class="lastyear-list" id="lastyear-list"></div>
+  <!-- Children and parents, collapsed until opened -->
+  <details class="kids">
+    <summary>ילדים והורים<span class="kids-sub">ממתינים לתשלום למעלה</span></summary>
+    <div class="list" id="list"></div>
   </details>
-
-  <!-- Children -->
-  <div class="section-head">
-    <span class="section-label">ילדים — ממתינים לתשלום למעלה</span>
-  </div>
-  <div class="list" id="list"></div>
 
   <footer>לחץ על תג תשלום לעדכון · נשמר בענן · משותף לכל הוועד</footer>
 </div>
@@ -1039,29 +1024,40 @@ function renderEvents() {
     grid.appendChild(row);
   });
 
-  grid.addEventListener('change', function(e) {
+  grid.onchange = function(e) {
     var inp = e.target;
     var id = parseInt(inp.dataset.evid);
     var field = inp.dataset.field;
-    if (!id || !field) return;
+    if (!id || !field || field === 'date') return;
     var ev = events.find(function(x){ return x.id === id; });
     if (!ev) return;
     if (field === 'amount') { ev.noMoney = false; ev.amount = parseFloat(inp.value)||0; }
-    else if (field === 'date') ev.date = inp.value;
     else if (field === 'name') ev.name = inp.value.trim() || ev.name;
     else ev[field] = inp.value;
     persistEvent(ev).then(function(){ renderEvents(); });
-  }, { once: true });
+  };
 
-  grid.addEventListener('input', function(e) {
+  // Date inputs fire change on every typed year digit (0002, 0020...), so save only on blur.
+  grid.onfocusout = function(e) {
+    var inp = e.target;
+    if (inp.dataset.field !== 'date') return;
+    var ev = events.find(function(x){ return x.id === parseInt(inp.dataset.evid); });
+    if (!ev) return;
+    var val = inp.value;
+    if (val && parseInt(val.slice(0, 4)) < 2000) { inp.value = ev.date; return; }
+    if (val === ev.date) return;
+    ev.date = val;
+    persistEvent(ev).then(function(){ renderEvents(); });
+  };
+
+  grid.oninput = function(e) {
     var inp = e.target;
     var id = parseInt(inp.dataset.evid);
     var field = inp.dataset.field;
-    if (!id || !field) return;
+    if (!id || !field || field === 'date') return;
     var ev = events.find(function(x){ return x.id === id; });
     if (!ev) return;
     if (field === 'amount') { ev.noMoney = false; ev.amount = parseFloat(inp.value)||0; }
-    else if (field === 'date') ev.date = inp.value;
     else if (field === 'name') ev.name = inp.value;
     else ev[field] = inp.value;
     var committed2 = expenses.filter(function(e){ return e.budget==='vaad'; }).reduce(function(s,e){ return s+e.amount; }, 0);
@@ -1072,7 +1068,7 @@ function renderEvents() {
     var allocEl = bar.querySelectorAll('.ebar-val')[2];
     if (freeEl)  { freeEl.textContent = fmt(free2);    freeEl.className = 'ebar-val ' + (free2<0?'over':free2<500?'warn':'ok'); }
     if (allocEl) { allocEl.textContent = fmt(allocated2); allocEl.className = 'ebar-val ' + (allocated2>available2?'over':''); }
-  });
+  };
 
   grid.onclick = function(e) {
     var moveBtn = e.target.closest('.event-move-btn');
@@ -1127,22 +1123,6 @@ function addEvent() {
   });
 }
 
-async function loadLastYear() {
-  var res = await sb.from('gan_ofer_timeline').select('*')
-    .order('event_date', { ascending: true, nullsFirst: false })
-    .order('sort_order');
-  var el = document.getElementById('lastyear-list');
-  if (res.error) { console.error(res.error); el.textContent = 'לא ניתן לטעון את הלו״ז של שנה שעברה'; return; }
-  el.innerHTML = (res.data || []).map(function(row) {
-    var date = row.event_date ? row.event_date.split('-').reverse().join('.') : 'ללא תאריך';
-    return '<div class="lastyear-item">' +
-      '<span class="lastyear-date">' + escHtml(date) + '</span>' +
-      '<span class="lastyear-title">' + escHtml(row.emoji || '') + ' ' + escHtml(row.title || '') + '</span>' +
-      (row.details ? '<div class="lastyear-details">' + escHtml(row.details) + '</div>' : '') +
-    '</div>';
-  }).join('');
-}
-
 function subscribeRealtime() {
   sb.channel('gan-ofer-live')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_children' }, function(){ if (!skipRealtime) loadAll(); })
@@ -1153,6 +1133,5 @@ function subscribeRealtime() {
 
 document.getElementById('event-add').addEventListener('click', addEvent);
 loadAll();
-loadLastYear();
 subscribeRealtime();
 </script>
