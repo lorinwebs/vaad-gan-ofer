@@ -16,7 +16,7 @@ create table if not exists public.gan_ofer_meetup_claims (
 );
 
 create or replace function public.gan_ofer_meetup_check_qty()
-returns trigger language plpgsql set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 declare cap int;
 begin
   select qty into cap from public.gan_ofer_meetup_items where id = new.item_id for update;
