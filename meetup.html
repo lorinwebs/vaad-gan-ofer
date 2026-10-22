@@ -275,7 +275,7 @@ function render() {
     meBar.innerHTML =
       '<span>היי להורים של <b>' + esc(kidName(me)) + '</b> 👋 ' +
       (mineNames.length ? '· אתם מביאים ' + mineNames.join(', ') + ' · אפשר לבחור עוד' : '· בחרו פריט למטה') +
-      '</span><button type="button" class="link-btn" id="change-kid">זה לא אני</button>';
+      '</span><button type="button" class="link-btn" id="change-kid">👧👦 החלפת ילד/ה (אחים? לחצו כאן)</button>';
     meBar.classList.add('show');
     kidsEl.style.display = 'none';
   } else {
@@ -365,7 +365,12 @@ document.addEventListener('click', function(e) {
     if (!myClaims().length) document.getElementById('items').scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
-  if (e.target.closest('#change-kid')) { picking = true; render(); return; }
+  if (e.target.closest('#change-kid')) {
+    picking = true;
+    render();
+    document.getElementById('pick-step').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
   var take = e.target.closest('[data-item]');
   if (take) { claim(Number(take.dataset.item)); return; }
   var undo = e.target.closest('[data-undo]');
