@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מפגש בפוליטי · גן עופר</title>
+<meta property="og:title" content="מפגש בפוליטי · שבת 24.10 🧺">
+<meta property="og:description" content="כל ילד מביא משהו — בחרו מה אתם מביאים">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Rubik:wght@600;700;800;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+:root {
+  --ink: #2A1B10;
+  --muted: #7A6556;
+  --line: rgba(42, 27, 16, 0.12);
+  --sun: #FFC83D;
+  --orange: #FF7A3D;
+  --pink: #FF5C8A;
+  --grass: #3FA66B;
+  --grass-soft: #E3F5EA;
+  --sky: #4CB8E8;
+  --card: #FFFFFF;
+  --radius: 18px;
+  --font: 'Assistant', 'Heebo', sans-serif;
+  --display: 'Rubik', 'Assistant', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  line-height: 1.6;
+  min-height: 100vh;
+  background:
+    radial-gradient(600px 300px at 90% -5%, rgba(255, 200, 61, 0.55), transparent 60%),
+    radial-gradient(500px 300px at 0% 10%, rgba(255, 92, 138, 0.22), transparent 60%),
+    radial-gradient(700px 400px at 50% 110%, rgba(63, 166, 107, 0.25), transparent 60%),
+    #FFF8EE;
+  padding: 0 1rem 5rem;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+
+.hero { text-align: center; padding: 2.4rem 0 1.4rem; animation: pop 0.6s cubic-bezier(.2,1.4,.4,1) both; }
+.hero-emoji { font-size: 3.2rem; line-height: 1; display: inline-block; animation: bob 3s ease-in-out infinite; }
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(2.2rem, 9vw, 3.6rem);
+  font-weight: 900;
+  line-height: 1.05;
+  margin: 0.4rem 0 0.6rem;
+  background: linear-gradient(90deg, var(--orange), var(--pink));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero p { color: var(--muted); font-size: 1.05rem; font-weight: 600; }
+.pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+.pill {
+  background: var(--card); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 0.35rem 0.9rem; font-weight: 800; font-size: 0.95rem;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.pill.sun { background: var(--sun); }
+.pill.green { background: var(--grass-soft); }
+
+.progress {
+  margin: 1.4rem 0 1.6rem; background: var(--card); border: 2px solid var(--ink);
+  border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: 4px 4px 0 var(--ink);
+}
+.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; font-weight: 800; }
+.progress-num { font-family: var(--display); font-size: 1.5rem; }
+.track { height: 14px; background: #F3E7D7; border-radius: 999px; overflow: hidden; margin-top: 0.5rem; }
+.bar { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--grass), var(--sun)); transition: width 0.6s cubic-bezier(.2,.8,.2,1); }
+
+.step { margin-bottom: 1.6rem; }
+.step-title { font-family: var(--display); font-weight: 800; font-size: 1.3rem; margin-bottom: 0.7rem; display: flex; align-items: center; gap: 0.5rem; }
+.step-num {
+  display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  background: var(--pink); color: #fff; font-size: 1rem; border: 2px solid var(--ink);
+}
+
+.kids { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.kid {
+  font-family: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+  background: var(--card); border: 2px solid var(--line); border-radius: 12px;
+  padding: 0.45rem 0.8rem; color: var(--ink); transition: transform 0.12s, border-color 0.12s;
+}
+.kid:hover { transform: translateY(-2px); border-color: var(--ink); }
+.kid.has-item { background: var(--grass-soft); }
+.kid.has-item::after { content: " ✓"; color: var(--grass); }
+.kid.is-me { background: var(--ink); color: #fff; border-color: var(--ink); }
+.kid.is-me::after { color: var(--sun); }
+
+.me-bar {
+  display: none; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+  background: var(--sun); border: 2px solid var(--ink); border-radius: var(--radius);
+  padding: 0.85rem 1rem; box-shadow: 4px 4px 0 var(--ink); font-weight: 700; font-size: 1.05rem;
+}
+.me-bar.show { display: flex; }
+.me-bar b { font-family: var(--display); font-weight: 800; }
+.link-btn {
+  font-family: inherit; font-weight: 800; font-size: 0.9rem; cursor: pointer;
+  background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 0.3rem 0.75rem;
+}
+
+.items { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.8rem; }
+.item {
+  position: relative; background: var(--card); border: 2px solid var(--ink); border-radius: var(--radius);
+  padding: 1rem 1rem 0.9rem; box-shadow: 4px 4px 0 var(--ink);
+  display: flex; flex-direction: column; gap: 0.55rem;
+  animation: pop 0.45s cubic-bezier(.2,1.4,.4,1) both;
+  transition: transform 0.15s;
+}
+.item:hover { transform: translateY(-2px) rotate(-0.4deg); }
+.item.is-full { background: #F6F1EA; box-shadow: 2px 2px 0 rgba(42,27,16,0.35); border-color: rgba(42,27,16,0.35); }
+.item.is-mine { background: var(--grass-soft); border-color: var(--grass); box-shadow: 4px 4px 0 var(--grass); }
+.item-head { display: flex; align-items: center; gap: 0.6rem; }
+.item-emoji { font-size: 2.1rem; line-height: 1; }
+.item-name { font-family: var(--display); font-weight: 800; font-size: 1.1rem; line-height: 1.2; flex: 1; }
+.item-count {
+  font-family: var(--display); font-weight: 800; font-size: 0.85rem; white-space: nowrap;
+  padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--sun); border: 2px solid var(--ink);
+}
+.is-full .item-count { background: var(--grass); color: #fff; border-color: var(--grass); }
+.slots { display: flex; flex-direction: column; gap: 0.3rem; }
+.slot {
+  font-size: 0.92rem; font-weight: 700; border-radius: 10px; padding: 0.3rem 0.6rem;
+  background: #FFF3E0; display: flex; align-items: center; gap: 0.4rem;
+}
+.slot.free { background: transparent; border: 2px dashed var(--line); color: var(--muted); font-weight: 600; }
+.slot.mine { background: var(--grass); color: #fff; }
+.take {
+  font-family: var(--display); font-weight: 800; font-size: 1rem; cursor: pointer; margin-top: auto;
+  background: var(--orange); color: #fff; border: 2px solid var(--ink); border-radius: 12px;
+  padding: 0.55rem; box-shadow: 3px 3px 0 var(--ink); transition: transform 0.1s, box-shadow 0.1s;
+}
+.take:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.take.undo { background: #fff; color: var(--ink); }
+.take.switch { background: var(--sky); }
+
+.missing {
+  margin-top: 2rem; background: var(--card); border: 2px dashed var(--ink); border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+.missing h3 { font-family: var(--display); font-size: 1.05rem; margin-bottom: 0.5rem; }
+.missing-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.missing-list span { background: #FFF3E0; border-radius: 8px; padding: 0.2rem 0.6rem; font-weight: 700; font-size: 0.9rem; }
+.done-msg { font-weight: 800; color: var(--grass); }
+
+.toast {
+  position: fixed; inset-inline: 0; inset-block-end: 1.2rem; margin: 0 auto; width: max-content; max-width: 92vw;
+  background: var(--ink); color: #fff; font-weight: 700; padding: 0.7rem 1.2rem; border-radius: 999px;
+  transform: translateY(150%); opacity: 0; transition: transform 0.3s cubic-bezier(.2,1.4,.4,1), opacity 0.2s;
+  z-index: 50;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 2.2rem; }
+
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 40; }
+.confetti i { position: absolute; inset-block-start: -20px; width: 10px; height: 14px; border-radius: 2px; animation: fall 1.6s ease-in forwards; }
+
+@keyframes pop { from { opacity: 0; transform: scale(0.92) translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
+@keyframes fall { to { transform: translateY(105vh) rotate(720deg); opacity: 0.7; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <span class="hero-emoji">🧺</span>
+    <h1>מפגש בפוליטי</h1>
+    <p>פיקניק פתיחת שנה של גן עופר · כל ילד מביא משהו קטן</p>
+    <div class="pills">
+      <span class="pill sun">📅 שבת · 24.10</span>
+      <span class="pill">📍 פוליטי</span>
+      <span class="pill green">🍕 פיצות — על הוועד</span>
+    </div>
+  </header>
+
+  <section class="progress" aria-live="polite">
+    <div class="progress-top">
+      <span>כמה כבר בחרו?</span>
+      <span class="progress-num" id="prog-num">—</span>
+    </div>
+    <div class="track"><div class="bar" id="bar"></div></div>
+  </section>
+
+  <section class="step" id="pick-step">
+    <div class="step-title"><span class="step-num">1</span>מי הילד/ה שלכם?</div>
+    <div class="me-bar" id="me-bar"></div>
+    <div class="kids" id="kids"></div>
+  </section>
+
+  <section class="step">
+    <div class="step-title"><span class="step-num">2</span>מה אתם מביאים?</div>
+    <div class="items" id="items"></div>
+  </section>
+
+  <section class="missing" id="missing"></section>
+
+  <footer>מתעדכן בזמן אמת · ועד גן עופר 💛</footer>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<div class="confetti" id="confetti"></div>
+
+<script>
+var sb = window.supabase.createClient(window.GAN_OFER_CONFIG.supabaseUrl, window.GAN_OFER_CONFIG.supabaseKey);
+var ME_KEY = 'gan-ofer-meetup-kid';
+var kids = [], items = [], claims = [];
+var me = Number(localStorage.getItem(ME_KEY)) || null;
+var picking = !me;
+var busy = false;
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+function kidName(id) { var k = kids.find(function(x){ return x.id === id; }); return k ? k.name : ''; }
+function myClaim() { return claims.find(function(c){ return c.child_id === me; }); }
+
+var toastTimer;
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+
+function confetti() {
+  var box = document.getElementById('confetti');
+  var colors = ['#FFC83D', '#FF7A3D', '#FF5C8A', '#3FA66B', '#4CB8E8'];
+  for (var i = 0; i < 40; i++) {
+    var p = document.createElement('i');
+    p.style.insetInlineStart = Math.random() * 100 + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = Math.random() * 0.4 + 's';
+    box.appendChild(p);
+  }
+  setTimeout(function(){ box.innerHTML = ''; }, 2200);
+}
+
+async function load() {
+  var res = await Promise.all([
+    sb.from('gan_ofer_children').select('id,name').order('sort_order'),
+    sb.from('gan_ofer_meetup_items').select('*').order('sort_order'),
+    sb.from('gan_ofer_meetup_claims').select('id,item_id,child_id').order('created_at')
+  ]);
+  var err = res[0].error || res[1].error || res[2].error;
+  if (err) { console.error(err); toast('שגיאה בטעינה, נסו לרענן'); return; }
+  kids = res[0].data.map(function(k){ return { id: Number(k.id), name: k.name }; });
+  items = res[1].data.map(function(i){ return { id: Number(i.id), emoji: i.emoji, name: i.name, qty: i.qty }; });
+  claims = res[2].data.map(function(c){ return { id: Number(c.id), item_id: Number(c.item_id), child_id: Number(c.child_id) }; });
+  if (me && !kids.some(function(k){ return k.id === me; })) { me = null; picking = true; }
+  render();
+}
+
+function render() {
+  var claimedKids = {};
+  claims.forEach(function(c){ claimedKids[c.child_id] = true; });
+  var doneCount = Object.keys(claimedKids).length;
+
+  document.getElementById('prog-num').textContent = doneCount + ' / ' + kids.length;
+  document.getElementById('bar').style.width = (kids.length ? doneCount / kids.length * 100 : 0) + '%';
+
+  var meBar = document.getElementById('me-bar');
+  var kidsEl = document.getElementById('kids');
+  var mine = myClaim();
+  if (me && !picking) {
+    var mineItem = mine && items.find(function(i){ return i.id === mine.item_id; });
+    meBar.innerHTML =
+      '<span>היי להורים של <b>' + esc(kidName(me)) + '</b> 👋 ' +
+      (mineItem ? '· אתם מביאים ' + esc(mineItem.emoji) + ' <b>' + esc(mineItem.name) + '</b>' : '· בחרו פריט למטה') +
+      '</span><button type="button" class="link-btn" id="change-kid">זה לא אני</button>';
+    meBar.classList.add('show');
+    kidsEl.style.display = 'none';
+  } else {
+    meBar.classList.remove('show');
+    kidsEl.style.display = '';
+  }
+  kidsEl.innerHTML = kids.map(function(k) {
+    var cls = 'kid' + (claimedKids[k.id] ? ' has-item' : '') + (k.id === me ? ' is-me' : '');
+    return '<button type="button" class="' + cls + '" data-kid="' + k.id + '">' + esc(k.name) + '</button>';
+  }).join('');
+
+  document.getElementById('items').innerHTML = items.map(function(it, idx) {
+    var taken = claims.filter(function(c){ return c.item_id === it.id; });
+    var isMine = !!(mine && mine.item_id === it.id);
+    var isFull = taken.length >= it.qty;
+    var slots = '';
+    for (var i = 0; i < it.qty; i++) {
+      var c = taken[i];
+      if (c) slots += '<div class="slot' + (c.child_id === me ? ' mine' : '') + '">🙋 ' + esc(kidName(c.child_id)) + '</div>';
+      else slots += '<div class="slot free">מקום פנוי</div>';
+    }
+    var btn = '';
+    if (isMine) btn = '<button type="button" class="take undo" data-undo="1">ביטול</button>';
+    else if (!isFull) btn = '<button type="button" class="take' + (mine ? ' switch' : '') + '" data-item="' + it.id + '">' + (mine ? 'להחליף לזה' : 'אני מביא/ה!') + '</button>';
+    return '<div class="item' + (isFull ? ' is-full' : '') + (isMine ? ' is-mine' : '') + '" style="animation-delay:' + (idx * 0.03) + 's">' +
+      '<div class="item-head"><span class="item-emoji">' + esc(it.emoji) + '</span>' +
+      '<span class="item-name">' + esc(it.name) + '</span>' +
+      '<span class="item-count">' + (isFull ? '✓ סגור' : taken.length + '/' + it.qty) + '</span></div>' +
+      '<div class="slots">' + slots + '</div>' + btn + '</div>';
+  }).join('');
+
+  var missingKids = kids.filter(function(k){ return !claimedKids[k.id]; });
+  var openItems = items.filter(function(it){ return claims.filter(function(c){ return c.item_id === it.id; }).length < it.qty; });
+  var missingEl = document.getElementById('missing');
+  if (!missingKids.length) {
+    missingEl.innerHTML = '<h3>🎉 כל הילדים בחרו!</h3><p class="done-msg">נתראה בשבת בפוליטי</p>';
+  } else {
+    missingEl.innerHTML =
+      '<h3>עוד לא בחרו (' + missingKids.length + ')</h3>' +
+      '<div class="missing-list">' + missingKids.map(function(k){ return '<span>' + esc(k.name) + '</span>'; }).join('') + '</div>' +
+      (openItems.length ? '' : '<p class="done-msg" style="margin-top:0.6rem">כל הרשימה מכוסה — מי שנשאר מוזמן להביא מה שבא לו 😊</p>');
+  }
+}
+
+async function claim(itemId) {
+  if (!me) {
+    toast('קודם בחרו את שם הילד/ה 👆');
+    document.getElementById('pick-step').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+  if (busy) return;
+  busy = true;
+  var res = await sb.from('gan_ofer_meetup_claims').upsert({ child_id: me, item_id: itemId }, { onConflict: 'child_id' });
+  busy = false;
+  if (res.error) {
+    toast(/item_full/.test(res.error.message) ? 'אופס, מישהו הקדים אתכם — בחרו משהו אחר' : 'שגיאה בשמירה, נסו שוב');
+  } else {
+    var it = items.find(function(i){ return i.id === itemId; });
+    toast('מעולה! ' + kidName(me) + ' מביא/ה ' + (it ? it.name : '') + ' ' + (it ? it.emoji : ''));
+    confetti();
+  }
+  load();
+}
+
+async function unclaim() {
+  if (busy || !me) return;
+  busy = true;
+  var res = await sb.from('gan_ofer_meetup_claims').delete().eq('child_id', me);
+  busy = false;
+  toast(res.error ? 'שגיאה בביטול, נסו שוב' : 'בוטל — אפשר לבחור משהו אחר');
+  load();
+}
+
+document.addEventListener('click', function(e) {
+  var kid = e.target.closest('[data-kid]');
+  if (kid) {
+    me = Number(kid.dataset.kid);
+    picking = false;
+    localStorage.setItem(ME_KEY, me);
+    render();
+    if (!myClaim()) document.getElementById('items').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (e.target.closest('#change-kid')) { picking = true; render(); return; }
+  var take = e.target.closest('[data-item]');
+  if (take) { claim(Number(take.dataset.item)); return; }
+  if (e.target.closest('[data-undo]')) unclaim();
+});
+
+sb.channel('gan-ofer-meetup')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_meetup_claims' }, function(){ if (!busy) load(); })
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'gan_ofer_meetup_items' }, function(){ if (!busy) load(); })
+  .subscribe();
+
+load();
+</script>
+</body>
+</html>
