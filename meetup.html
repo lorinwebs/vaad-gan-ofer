@@ -219,7 +219,7 @@ function esc(s) {
   });
 }
 function kidName(id) { var k = kids.find(function(x){ return x.id === id; }); return k ? k.name : ''; }
-function myClaim() { return claims.find(function(c){ return c.child_id === me; }); }
+function myClaims() { return claims.filter(function(c){ return c.child_id === me; }); }
 
 var toastTimer;
 function toast(msg) {
@@ -268,12 +268,13 @@ function render() {
 
   var meBar = document.getElementById('me-bar');
   var kidsEl = document.getElementById('kids');
-  var mine = myClaim();
+  var mineIds = myClaims().map(function(c){ return c.item_id; });
   if (me && !picking) {
-    var mineItem = mine && items.find(function(i){ return i.id === mine.item_id; });
+    var mineNames = items.filter(function(i){ return mineIds.indexOf(i.id) !== -1; })
+      .map(function(i){ return esc(i.emoji) + ' <b>' + esc(i.name) + '</b>'; });
     meBar.innerHTML =
       '<span>היי להורים של <b>' + esc(kidName(me)) + '</b> 👋 ' +
-      (mineItem ? '· אתם מביאים ' + esc(mineItem.emoji) + ' <b>' + esc(mineItem.name) + '</b>' : '· בחרו פריט למטה') +
+      (mineNames.length ? '· אתם מביאים ' + mineNames.join(', ') + ' · אפשר לבחור עוד' : '· בחרו פריט למטה') +
       '</span><button type="button" class="link-btn" id="change-kid">זה לא אני</button>';
     meBar.classList.add('show');
     kidsEl.style.display = 'none';
@@ -288,7 +289,7 @@ function render() {
 
   document.getElementById('items').innerHTML = items.map(function(it, idx) {
     var taken = claims.filter(function(c){ return c.item_id === it.id; });
-    var isMine = !!(mine && mine.item_id === it.id);
+    var isMine = mineIds.indexOf(it.id) !== -1;
     var isFull = taken.length >= it.qty;
     var slots = '';
     for (var i = 0; i < it.qty; i++) {
@@ -297,8 +298,8 @@ function render() {
       else slots += '<div class="slot free">מקום פנוי</div>';
     }
     var btn = '';
-    if (isMine) btn = '<button type="button" class="take undo" data-undo="1">ביטול</button>';
-    else if (!isFull) btn = '<button type="button" class="take' + (mine ? ' switch' : '') + '" data-item="' + it.id + '">' + (mine ? 'להחליף לזה' : 'אני מביא/ה!') + '</button>';
+    if (isMine) btn = '<button type="button" class="take undo" data-undo="' + it.id + '">ביטול</button>';
+    else if (!isFull) btn = '<button type="button" class="take' + (mineIds.length ? ' switch' : '') + '" data-item="' + it.id + '">' + (mineIds.length ? 'גם את זה!' : 'אני מביא/ה!') + '</button>';
     return '<div class="item' + (isFull ? ' is-full' : '') + (isMine ? ' is-mine' : '') + '" style="animation-delay:' + (idx * 0.03) + 's">' +
       '<div class="item-head"><span class="item-emoji">' + esc(it.emoji) + '</span>' +
       '<span class="item-name">' + esc(it.name) + '</span>' +
@@ -307,15 +308,21 @@ function render() {
   }).join('');
 
   var missingKids = kids.filter(function(k){ return !claimedKids[k.id]; });
-  var openItems = items.filter(function(it){ return claims.filter(function(c){ return c.item_id === it.id; }).length < it.qty; });
+  var openSpots = items.reduce(function(s, it){
+    return s + Math.max(0, it.qty - claims.filter(function(c){ return c.item_id === it.id; }).length);
+  }, 0);
   var missingEl = document.getElementById('missing');
+  var spotsLine = openSpots
+    ? '<p style="margin-top:0.6rem;font-weight:700">נשארו עוד <b>' + openSpots + '</b> פריטים פנויים' +
+      (openSpots > missingKids.length ? ' — מי שיכול, מוזמן לקחת עוד אחד 🙏' : '') + '</p>'
+    : '<p class="done-msg" style="margin-top:0.6rem">🎉 כל הרשימה מכוסה! מי שעוד לא בחר מוזמן להביא מה שבא לו 😊</p>';
   if (!missingKids.length) {
-    missingEl.innerHTML = '<h3>🎉 כל הילדים בחרו!</h3><p class="done-msg">נתראה בשבת בפוליטי</p>';
+    missingEl.innerHTML = '<h3>🎉 כל הילדים בחרו!</h3>' + spotsLine;
   } else {
     missingEl.innerHTML =
       '<h3>עוד לא בחרו (' + missingKids.length + ')</h3>' +
       '<div class="missing-list">' + missingKids.map(function(k){ return '<span>' + esc(k.name) + '</span>'; }).join('') + '</div>' +
-      (openItems.length ? '' : '<p class="done-msg" style="margin-top:0.6rem">כל הרשימה מכוסה — מי שנשאר מוזמן להביא מה שבא לו 😊</p>');
+      spotsLine;
   }
 }
 
@@ -327,7 +334,7 @@ async function claim(itemId) {
   }
   if (busy) return;
   busy = true;
-  var res = await sb.from('gan_ofer_meetup_claims').upsert({ child_id: me, item_id: itemId }, { onConflict: 'child_id' });
+  var res = await sb.from('gan_ofer_meetup_claims').insert({ child_id: me, item_id: itemId });
   busy = false;
   if (res.error) {
     toast(/item_full/.test(res.error.message) ? 'אופס, מישהו הקדים אתכם — בחרו משהו אחר' : 'שגיאה בשמירה, נסו שוב');
@@ -339,12 +346,12 @@ async function claim(itemId) {
   load();
 }
 
-async function unclaim() {
+async function unclaim(itemId) {
   if (busy || !me) return;
   busy = true;
-  var res = await sb.from('gan_ofer_meetup_claims').delete().eq('child_id', me);
+  var res = await sb.from('gan_ofer_meetup_claims').delete().eq('child_id', me).eq('item_id', itemId);
   busy = false;
-  toast(res.error ? 'שגיאה בביטול, נסו שוב' : 'בוטל — אפשר לבחור משהו אחר');
+  toast(res.error ? 'שגיאה בביטול, נסו שוב' : 'בוטל');
   load();
 }
 
@@ -355,13 +362,14 @@ document.addEventListener('click', function(e) {
     picking = false;
     localStorage.setItem(ME_KEY, me);
     render();
-    if (!myClaim()) document.getElementById('items').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!myClaims().length) document.getElementById('items').scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
   if (e.target.closest('#change-kid')) { picking = true; render(); return; }
   var take = e.target.closest('[data-item]');
   if (take) { claim(Number(take.dataset.item)); return; }
-  if (e.target.closest('[data-undo]')) unclaim();
+  var undo = e.target.closest('[data-undo]');
+  if (undo) unclaim(Number(undo.dataset.undo));
 });
 
 sb.channel('gan-ofer-meetup')
