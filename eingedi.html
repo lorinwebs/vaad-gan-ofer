@@ -56,8 +56,9 @@ body {
   overflow: hidden;
   border: 2px solid var(--ink);
   box-shadow: 5px 5px 0 var(--ink);
-  margin-bottom: 1.25rem;
-  aspect-ratio: 16 / 9;
+  margin-bottom: 1rem;
+  aspect-ratio: 2.2 / 1;
+  max-height: 260px;
   background: var(--sand-deep);
 }
 .hero-art img {
@@ -104,29 +105,37 @@ body {
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .hero p { color: var(--muted); font-size: 1.05rem; font-weight: 600; max-width: 34rem; margin-inline: auto; }
-.pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+.meta {
+  margin: 1rem auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+.pills {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+  gap: 0.5rem;
+}
 .pill {
   background: var(--card); border: 2px solid var(--ink); border-radius: 999px;
   padding: 0.35rem 0.9rem; font-weight: 800; font-size: 0.95rem;
   box-shadow: 3px 3px 0 var(--ink);
+  white-space: nowrap;
 }
 .pill.sun { background: var(--sun); }
 .pill.water { background: #D7F1F2; }
 .pill.sand { background: var(--sand); }
-
-.progress {
-  margin: 1.4rem 0 1.5rem; background: var(--card); border: 2px solid var(--ink);
-  border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: 4px 4px 0 var(--ink);
-  animation: pop 0.5s cubic-bezier(.2,1.4,.4,1) both 0.05s;
+.pill.families { background: #FFE0C8; }
+.pill.adults { background: var(--sun); }
+.pill.kids { background: #D7F1F2; }
+.pills-row {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+  gap: 0.5rem;
+  width: 100%;
 }
-.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; font-weight: 800; }
-.progress-num { font-family: var(--display); font-size: 1.5rem; color: var(--water-deep); }
-.progress-sub { font-size: 0.85rem; color: var(--muted); font-weight: 700; margin-top: 0.2rem; }
-.track { height: 14px; background: #F0E4D2; border-radius: 999px; overflow: hidden; margin-top: 0.55rem; }
-.bar {
-  height: 100%; width: 0; border-radius: 999px;
-  background: linear-gradient(90deg, var(--water), var(--sun));
-  transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+.pills-label {
+  font-family: var(--display); font-weight: 800; font-size: 0.95rem; color: var(--ink);
+  flex-shrink: 0;
 }
 
 .panel {
@@ -249,24 +258,31 @@ footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top
     <p class="brand">Karziya Family</p>
     <h1>נוסעים לעין גדי</h1>
     <p>סוף שבוע משפחות במדבר — מפלים, יעלים וים המלח. כל משפחה נרשמת כאן.</p>
-    <div class="pills">
-      <span class="pill sun">📅 12–14.11</span>
-      <span class="pill water">💧 עין גדי</span>
-      <span class="pill sand">🐐 משפחת קרזיה</span>
+    <div class="meta">
+      <div class="pills">
+        <span class="pill sun">📅 12–14.11</span>
+        <span class="pill water">💧 עין גדי</span>
+        <span class="pill sand">🐐 משפחת קרזיה</span>
+      </div>
+      <div class="pills-row" aria-live="polite">
+        <span class="pills-label">כבר נרשמו:</span>
+        <span class="pill families" id="summary-families">🏠 — משפחות</span>
+        <span class="pill adults" id="summary-adults">— מבוגרים</span>
+        <span class="pill kids" id="summary-kids">— ילדים</span>
+      </div>
     </div>
   </header>
 
-  <section class="progress" aria-live="polite">
-    <div class="progress-top">
-      <span>כמה כבר נרשמו?</span>
-      <span class="progress-num" id="prog-num">—</span>
+  <section class="panel" aria-live="polite">
+    <div class="list-head">
+      <h2>מי כבר נרשם</h2>
+      <span id="list-count">—</span>
     </div>
-    <div class="progress-sub" id="prog-sub">טוען…</div>
-    <div class="track"><div class="bar" id="bar"></div></div>
+    <div class="rsvps" id="rsvps"></div>
   </section>
 
   <section class="panel">
-    <div class="panel-title"><span class="step-num">1</span>הרשמת משפחה</div>
+    <div class="panel-title">הרשמת משפחה</div>
     <form class="form-grid" id="form" autocomplete="on">
       <div class="field">
         <label for="family-name">שם משפחה</label>
@@ -278,14 +294,6 @@ footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top
       </div>
       <button type="submit" class="submit" id="submit">נרשמים! 🐪</button>
     </form>
-  </section>
-
-  <section class="panel" aria-live="polite">
-    <div class="list-head">
-      <h2>מי כבר נרשם</h2>
-      <span id="list-count">—</span>
-    </div>
-    <div class="rsvps" id="rsvps"></div>
   </section>
 
   <footer>מתעדכן בזמן אמת · Karziya Family · עין גדי 12–14.11</footer>
@@ -300,6 +308,7 @@ var TABLE = 'karziya_eingedi_rsvps';
 var rsvps = [];
 var busy = false;
 var GOAL = 12;
+var ADULTS_PER_FAMILY = 2;
 
 var EMOJIS = ['🐪', '🐐', '🌴', '💧', '🪨', '☀️', '🏕️', '🐦'];
 
@@ -369,11 +378,11 @@ async function load() {
 function render() {
   var families = rsvps.length;
   var kidsTotal = rsvps.reduce(function(s, r){ return s + r.kids; }, 0);
-  document.getElementById('prog-num').textContent = families;
-  document.getElementById('prog-sub').textContent =
-    families === 0 ? 'עדיין אין נרשמים — תהיו הראשונים!' :
-    families + ' משפחות · ' + kidsTotal + ' ילדים';
-  document.getElementById('bar').style.width = Math.min(100, (families / GOAL) * 100) + '%';
+  var adultsTotal = families * ADULTS_PER_FAMILY;
+  document.getElementById('summary-families').textContent =
+    families === 0 ? '🏠 עדיין אין נרשמים' : '🏠 ' + families + ' משפחות!';
+  document.getElementById('summary-adults').textContent = adultsTotal + ' מבוגרים';
+  document.getElementById('summary-kids').textContent = kidsTotal + ' ילדים';
   document.getElementById('list-count').textContent = families ? families + ' משפחות' : '';
 
   var el = document.getElementById('rsvps');
