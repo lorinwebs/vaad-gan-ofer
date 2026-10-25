@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karziya Family · עין גדי</title>
+<meta property="og:title" content="Karziya Family נוסעת לעין גדי · 12–14.11">
+<meta property="og:description" content="הרשמה למשפחות — שם משפחה ומספר ילדים">
+<meta property="og:image" content="./assets/eingedi-hero.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Rubik:wght@600;700;800;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+:root {
+  --ink: #1E2A2F;
+  --muted: #5E727A;
+  --line: rgba(30, 42, 47, 0.12);
+  --sand: #F3E2C5;
+  --sand-deep: #E8CFA6;
+  --cliff: #C46A3A;
+  --water: #2A9B9F;
+  --water-deep: #1B6F72;
+  --palm: #2F7A4E;
+  --sun: #F0B429;
+  --card: #FFFFFF;
+  --radius: 18px;
+  --font: 'Assistant', 'Heebo', sans-serif;
+  --display: 'Rubik', 'Assistant', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  line-height: 1.65;
+  min-height: 100vh;
+  background:
+    radial-gradient(700px 340px at 100% -8%, rgba(240, 180, 41, 0.45), transparent 58%),
+    radial-gradient(560px 320px at -8% 12%, rgba(42, 155, 159, 0.22), transparent 55%),
+    radial-gradient(640px 380px at 50% 115%, rgba(196, 106, 58, 0.18), transparent 55%),
+    linear-gradient(180deg, #FFF6E8 0%, #F7EBD6 42%, #EAF4F3 100%);
+  padding: 0 1rem 5rem;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+
+.hero {
+  text-align: center;
+  padding: 1.6rem 0 0.4rem;
+  animation: pop 0.6s cubic-bezier(.2,1.4,.4,1) both;
+}
+.hero-art {
+  position: relative;
+  width: 100%;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  margin-bottom: 1.25rem;
+  aspect-ratio: 16 / 9;
+  background: var(--sand-deep);
+}
+.hero-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-badge {
+  position: absolute;
+  inset-block-end: 0.85rem;
+  inset-inline-start: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255,255,255,0.92);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem 0.28rem 0.35rem;
+  font-weight: 800;
+  font-size: 0.88rem;
+  box-shadow: 2px 2px 0 rgba(30,42,47,0.25);
+}
+.hero-badge img {
+  width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover;
+  border: 1.5px solid var(--ink);
+}
+.brand {
+  font-family: var(--display);
+  font-size: clamp(0.95rem, 3vw, 1.1rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--water-deep);
+  margin-bottom: 0.25rem;
+}
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(2.1rem, 8.5vw, 3.4rem);
+  font-weight: 900;
+  line-height: 1.05;
+  margin: 0.15rem 0 0.55rem;
+  background: linear-gradient(100deg, var(--cliff), #E08A3C 45%, var(--water));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero p { color: var(--muted); font-size: 1.05rem; font-weight: 600; max-width: 34rem; margin-inline: auto; }
+.pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; margin-top: 1rem; }
+.pill {
+  background: var(--card); border: 2px solid var(--ink); border-radius: 999px;
+  padding: 0.35rem 0.9rem; font-weight: 800; font-size: 0.95rem;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.pill.sun { background: var(--sun); }
+.pill.water { background: #D7F1F2; }
+.pill.sand { background: var(--sand); }
+
+.progress {
+  margin: 1.4rem 0 1.5rem; background: var(--card); border: 2px solid var(--ink);
+  border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: 4px 4px 0 var(--ink);
+  animation: pop 0.5s cubic-bezier(.2,1.4,.4,1) both 0.05s;
+}
+.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; font-weight: 800; }
+.progress-num { font-family: var(--display); font-size: 1.5rem; color: var(--water-deep); }
+.progress-sub { font-size: 0.85rem; color: var(--muted); font-weight: 700; margin-top: 0.2rem; }
+.track { height: 14px; background: #F0E4D2; border-radius: 999px; overflow: hidden; margin-top: 0.55rem; }
+.bar {
+  height: 100%; width: 0; border-radius: 999px;
+  background: linear-gradient(90deg, var(--water), var(--sun));
+  transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+}
+
+.panel {
+  background: var(--card); border: 2px solid var(--ink); border-radius: var(--radius);
+  padding: 1.15rem 1.2rem 1.25rem; box-shadow: 4px 4px 0 var(--ink);
+  margin-bottom: 1.4rem;
+  animation: pop 0.5s cubic-bezier(.2,1.4,.4,1) both 0.08s;
+}
+.panel-title {
+  font-family: var(--display); font-weight: 800; font-size: 1.25rem;
+  display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.9rem;
+}
+.step-num {
+  display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  background: var(--cliff); color: #fff; font-size: 1rem; border: 2px solid var(--ink);
+  flex-shrink: 0;
+}
+
+.form-grid { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 0.75rem; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.field label { font-size: 0.78rem; font-weight: 800; color: var(--muted); }
+.field input {
+  font-family: inherit; font-size: 1.05rem; font-weight: 700;
+  background: #FFFBF4; border: 2px solid var(--ink); border-radius: 12px;
+  padding: 0.7rem 0.85rem; color: var(--ink); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus { box-shadow: 0 0 0 3px rgba(42, 155, 159, 0.28); }
+.field input[type="number"] { direction: ltr; text-align: center; font-variant-numeric: tabular-nums; }
+.submit {
+  grid-column: 1 / -1;
+  font-family: var(--display); font-weight: 800; font-size: 1.1rem; cursor: pointer;
+  background: var(--water); color: #fff; border: 2px solid var(--ink); border-radius: 14px;
+  padding: 0.75rem 1rem; box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.submit:hover { background: var(--water-deep); }
+.submit:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.submit:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
+.list-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+.list-head h2 { font-family: var(--display); font-size: 1.25rem; font-weight: 800; }
+.list-head span { font-weight: 800; color: var(--muted); font-size: 0.9rem; }
+
+.rsvps { display: flex; flex-direction: column; gap: 0.55rem; }
+.rsvp {
+  display: grid; grid-template-columns: auto 1fr auto auto; gap: 0.65rem; align-items: center;
+  background: #FFFBF4; border: 2px solid var(--line); border-radius: 14px;
+  padding: 0.7rem 0.85rem;
+  animation: pop 0.4s cubic-bezier(.2,1.4,.4,1) both;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.rsvp:hover { border-color: var(--ink); transform: translateY(-1px); }
+.rsvp-emoji {
+  width: 2.4rem; height: 2.4rem; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.25rem;
+  background: #D7F1F2; border: 2px solid var(--ink);
+}
+.rsvp-name { font-family: var(--display); font-weight: 800; font-size: 1.05rem; line-height: 1.2; }
+.rsvp-meta { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.rsvp-kids {
+  font-family: var(--display); font-weight: 800; font-size: 0.9rem; white-space: nowrap;
+  padding: 0.28rem 0.65rem; border-radius: 999px; background: var(--sun);
+  border: 2px solid var(--ink);
+}
+.rsvp-del {
+  background: none; border: none; cursor: pointer; color: var(--muted);
+  font-size: 1rem; padding: 0.25rem 0.4rem; border-radius: 8px; line-height: 1;
+}
+.rsvp-del:hover { color: #B42318; background: #FCEBEA; }
+.empty {
+  text-align: center; color: var(--muted); font-weight: 700;
+  padding: 1.4rem 0.5rem; border: 2px dashed var(--line); border-radius: 14px;
+}
+
+.toast {
+  position: fixed; inset-inline: 0; inset-block-end: 1.2rem; margin: 0 auto;
+  width: max-content; max-width: 92vw;
+  background: var(--ink); color: #fff; font-weight: 700;
+  padding: 0.7rem 1.2rem; border-radius: 999px;
+  transform: translateY(150%); opacity: 0;
+  transition: transform 0.3s cubic-bezier(.2,1.4,.4,1), opacity 0.2s;
+  z-index: 50;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 40; }
+.confetti i {
+  position: absolute; inset-block-start: -20px; width: 10px; height: 14px; border-radius: 2px;
+  animation: fall 1.6s ease-in forwards;
+}
+
+footer { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 1.8rem; font-weight: 600; }
+
+@keyframes pop { from { opacity: 0; transform: scale(0.94) translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fall { to { transform: translateY(105vh) rotate(720deg); opacity: 0.7; } }
+@media (max-width: 560px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .rsvp { grid-template-columns: auto 1fr auto; }
+  .rsvp-del { grid-column: 3; grid-row: 1; }
+  .rsvp-kids { grid-column: 2; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-art">
+      <img src="./assets/eingedi-hero.jpg" alt="איור נווה מדבר בעין גדי — מצוקים, דקלים ומעיין" width="1600" height="900">
+      <div class="hero-badge">
+        <img src="./assets/eingedi-ibex.jpg" alt="" width="64" height="64">
+        <span>עין גדי מחכה</span>
+      </div>
+    </div>
+    <p class="brand">Karziya Family</p>
+    <h1>נוסעים לעין גדי</h1>
+    <p>סוף שבוע משפחות במדבר — מפלים, יעלים וים המלח. כל משפחה נרשמת כאן.</p>
+    <div class="pills">
+      <span class="pill sun">📅 12–14.11</span>
+      <span class="pill water">💧 עין גדי</span>
+      <span class="pill sand">🐐 משפחת קרזיה</span>
+    </div>
+  </header>
+
+  <section class="progress" aria-live="polite">
+    <div class="progress-top">
+      <span>כמה כבר נרשמו?</span>
+      <span class="progress-num" id="prog-num">—</span>
+    </div>
+    <div class="progress-sub" id="prog-sub">טוען…</div>
+    <div class="track"><div class="bar" id="bar"></div></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title"><span class="step-num">1</span>הרשמת משפחה</div>
+    <form class="form-grid" id="form" autocomplete="on">
+      <div class="field">
+        <label for="family-name">שם משפחה</label>
+        <input id="family-name" name="family" type="text" maxlength="80" required placeholder="לדוגמה: לוי" autocomplete="family-name">
+      </div>
+      <div class="field">
+        <label for="kids-count">מספר ילדים</label>
+        <input id="kids-count" name="kids" type="number" min="0" max="30" required value="2" inputmode="numeric">
+      </div>
+      <button type="submit" class="submit" id="submit">נרשמים! 🐪</button>
+    </form>
+  </section>
+
+  <section class="panel" aria-live="polite">
+    <div class="list-head">
+      <h2>מי כבר נרשם</h2>
+      <span id="list-count">—</span>
+    </div>
+    <div class="rsvps" id="rsvps"></div>
+  </section>
+
+  <footer>מתעדכן בזמן אמת · Karziya Family · עין גדי 12–14.11</footer>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="confetti" id="confetti"></div>
+
+<script>
+var sb = window.supabase.createClient(window.GAN_OFER_CONFIG.supabaseUrl, window.GAN_OFER_CONFIG.supabaseKey);
+var TABLE = 'karziya_eingedi_rsvps';
+var rsvps = [];
+var busy = false;
+var GOAL = 12;
+
+var EMOJIS = ['🐪', '🐐', '🌴', '💧', '🪨', '☀️', '🏕️', '🐦'];
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function kidsLabel(n) {
+  if (n === 0) return 'בלי ילדים';
+  if (n === 1) return 'ילד/ה אחד/ת';
+  return n + ' ילדים';
+}
+
+function fmtWhen(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var hh = String(d.getHours()).padStart(2, '0');
+  var mi = String(d.getMinutes()).padStart(2, '0');
+  return dd + '.' + mm + ' · ' + hh + ':' + mi;
+}
+
+var toastTimer;
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+
+function confetti() {
+  var box = document.getElementById('confetti');
+  var colors = ['#F0B429', '#C46A3A', '#2A9B9F', '#2F7A4E', '#E8CFA6'];
+  for (var i = 0; i < 36; i++) {
+    var p = document.createElement('i');
+    p.style.insetInlineStart = Math.random() * 100 + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = Math.random() * 0.4 + 's';
+    box.appendChild(p);
+  }
+  setTimeout(function(){ box.innerHTML = ''; }, 2200);
+}
+
+async function load() {
+  var res = await sb.from(TABLE).select('id,family_name,kids_count,created_at').order('created_at', { ascending: true });
+  if (res.error) {
+    console.error(res.error);
+    toast('שגיאה בטעינה, נסו לרענן');
+    return;
+  }
+  rsvps = (res.data || []).map(function(r) {
+    return {
+      id: Number(r.id),
+      family: r.family_name,
+      kids: Number(r.kids_count),
+      at: r.created_at
+    };
+  });
+  render();
+}
+
+function render() {
+  var families = rsvps.length;
+  var kidsTotal = rsvps.reduce(function(s, r){ return s + r.kids; }, 0);
+  document.getElementById('prog-num').textContent = families;
+  document.getElementById('prog-sub').textContent =
+    families === 0 ? 'עדיין אין נרשמים — תהיו הראשונים!' :
+    families + ' משפחות · ' + kidsTotal + ' ילדים';
+  document.getElementById('bar').style.width = Math.min(100, (families / GOAL) * 100) + '%';
+  document.getElementById('list-count').textContent = families ? families + ' משפחות' : '';
+
+  var el = document.getElementById('rsvps');
+  if (!rsvps.length) {
+    el.innerHTML = '<div class="empty">🏜️ אף אחד עוד לא נרשם — בואו נמלא את הרשימה</div>';
+    return;
+  }
+  el.innerHTML = rsvps.slice().reverse().map(function(r, idx) {
+    var emoji = EMOJIS[r.id % EMOJIS.length];
+    return '<div class="rsvp" style="animation-delay:' + (idx * 0.03) + 's">' +
+      '<div class="rsvp-emoji" aria-hidden="true">' + emoji + '</div>' +
+      '<div><div class="rsvp-name">משפחת ' + esc(r.family) + '</div>' +
+      '<div class="rsvp-meta">' + esc(fmtWhen(r.at)) + '</div></div>' +
+      '<span class="rsvp-kids">' + esc(kidsLabel(r.kids)) + '</span>' +
+      '<button type="button" class="rsvp-del" data-del="' + r.id + '" title="מחיקה" aria-label="מחיקת הרשמה">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+async function register(family, kids) {
+  if (busy) return;
+  busy = true;
+  document.getElementById('submit').disabled = true;
+  var res = await sb.from(TABLE).insert({ family_name: family, kids_count: kids }).select().single();
+  busy = false;
+  document.getElementById('submit').disabled = false;
+  if (res.error) {
+    console.error(res.error);
+    toast('שגיאה בשמירה, נסו שוב');
+    return;
+  }
+  toast('נרשמתם! משפחת ' + family + ' בדרך לעין גדי 🌴');
+  confetti();
+  document.getElementById('form').reset();
+  document.getElementById('kids-count').value = '2';
+  await load();
+}
+
+async function remove(id) {
+  if (busy) return;
+  if (!confirm('למחוק את ההרשמה?')) return;
+  busy = true;
+  var res = await sb.from(TABLE).delete().eq('id', id);
+  busy = false;
+  toast(res.error ? 'שגיאה במחיקה' : 'נמחק');
+  load();
+}
+
+document.getElementById('form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var family = document.getElementById('family-name').value.trim();
+  var kids = parseInt(document.getElementById('kids-count').value, 10);
+  if (!family) { toast('צריך שם משפחה'); return; }
+  if (isNaN(kids) || kids < 0 || kids > 30) { toast('מספר ילדים לא תקין'); return; }
+  var dup = rsvps.some(function(r){ return r.family === family; });
+  if (dup && !confirm('משפחת "' + family + '" כבר ברשימה. להוסיף שוב?')) return;
+  register(family, kids);
+});
+
+document.getElementById('rsvps').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-del]');
+  if (btn) remove(Number(btn.dataset.del));
+});
+
+sb.channel('karziya-eingedi')
+  .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, function(){ if (!busy) load(); })
+  .subscribe();
+
+load();
+</script>
+</body>
+</html>
